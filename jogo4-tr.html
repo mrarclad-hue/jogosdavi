@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Battle Royale Platformer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { display: block; background: linear-gradient(#87CEEB, #E0F6FF); }
+        #ui { position: absolute; top: 20px; left: 20px; color: #333; pointer-events: none; text-shadow: 1px 1px 2px white; }
+        .stat { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+        #joystick-container {
+            position: absolute; bottom: 40px; left: 40px;
+            width: 100px; height: 100px; background: rgba(0,0,0,0.1);
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; touch-action: none;
+        }
+        #joystick-knob {
+            position: absolute; top: 25px; left: 25px;
+            width: 50px; height: 50px; background: rgba(255,255,255,0.8);
+            border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        #btn-shoot {
+            position: absolute; bottom: 50px; right: 50px;
+            width: 80px; height: 80px; background: #ff4757;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; user-select: none; box-shadow: 0 4px 0 #c44141;
+            active { transform: translateY(4px); box-shadow: none; }
+        }
+        #msg-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 20px 40px;
+            border-radius: 10px; text-align: center; display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="stat">KILLS: <span id="score">0</span></div>
+    <div class="stat">VIDA: <span id="health">100</span>%</div>
+</div>
+
+<div id="msg-overlay">
+    <h1 id="msg-title">GAME OVER</h1>
+    <p>Reiniciando em instantes...</p>
+</div>
+
+<div id="joystick-container"><div id="joystick-knob"></div></div>
+<div id="btn-shoot">FOGO</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const healthEl = document.getElementById('health');
+const overlay = document.getElementById('msg-overlay');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const gravity = 0.6;
+let score = 0;
+let gameActive = true;
+let frameCount = 0;
+
+const controls = { x: 0, y: 0 };
+
+const player = {
+    x: 100, y: 100, w: 30, h: 40,
+    vx: 0, vy: 0, speed: 5, jumpPower: -14,
+    health: 100, grounded: false, color: '#2ed573'
+};
+
+const platforms = [
+    { x: 0, y: canvas.height - 60, w: canvas.width, h: 60 },
+    { x: 150, y: canvas.height - 180, w: 200, h: 20 },
+    { x: 500, y: canvas.height - 300, w: 250, h: 20 },
+    { x: canvas.width - 300, y: canvas.height - 200, w: 200, h: 20 }
+];
+
+const bullets = [];
+const enemies = [];
+const airplane = { x: -250, y: 60, speed: 2.5, w: 180, h: 50 };
+
+// --- Joystick ---
+const joystick = document.getElementById('joystick-container');
+const knob = document.getElementById('joystick-knob');
+let dragging = false;
+
+joystick.addEventListener('touchstart', (e) => { dragging = true; e.preventDefault(); });
+window.addEventListener('touchend', () => {
+    dragging = false;
+    knob.style.transform = `translate(0px, 0px)`;
+    controls.x = 0;
+});
+
+window.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    const rect = joystick.getBoundingClientRect();
+    const touch = e.touches[0];
+    let dx = touch.clientX - (rect.left + rect.width/2);
+    let dy = touch.clientY - (rect.top + rect.height/2);
+    const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 35);
+    const angle = Math.atan2(dy, dx);
+    knob.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
+    controls.x = (Math.cos(angle) * dist) / 35;
+    if (dy < -20 && player.grounded) player.vy = player.jumpPower;
+});
+
+// Botão de Tiro
+const shootBtn = document.getElementById('btn-shoot');
+const fire = () => {
+    if(!gameActive) return;
+    bullets.push({ x: player.x + player.w, y: player.y + 15, vx: 12 });
+};
+shootBtn.addEventListener('mousedown', fire);
+shootBtn.addEventListener('touchstart', (e) => { e.preventDefault(); fire(); });
+
+function drawStickman(x, y, color, isEnemy = false) {
+    const time = frameCount * 0.15;
+    const walk = isEnemy ? 0 : Math.sin(time) * 10;
+
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.fillStyle = color;
+
+    // Cabeça/Corpo
+    ctx.beginPath();
+    ctx.roundRect(x, y, 30, 30, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Olhos
+    ctx.fillStyle = 'white';
+    ctx.fillRect(x + (isEnemy ? 5 : 18), y + 8, 6, 6);
+    
+    // Pernas
+    ctx.beginPath();
+    ctx.moveTo(x + 10, y + 30);
+    ctx.lineTo(x + 5 - walk, y + 45); // Perna Esq
+    ctx.moveTo(x + 20, y + 30);
+    ctx.lineTo(x + 25 + walk, y + 45); // Perna Dir
+    ctx.stroke();
+
+    // Braços e Arma
+    ctx.beginPath();
+    ctx.moveTo(x + 5, y + 15);
+    ctx.lineTo(x - 5, y + 25); // Braço trás
+    ctx.moveTo(x + 25, y + 15);
+    ctx.lineTo(x + 40, y + 25); // Braço frente
+    ctx.stroke();
+
+    if(!isEnemy) { // Arma do Player
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 35, y + 20, 15, 8);
+        ctx.fillRect(x + 35, y + 25, 4, 8);
+    }
+}
+
+function drawAirplane() {
+    const {x, y} = airplane;
+    // Corpo
+    ctx.fillStyle = '#dfe6e9';
+    ctx.beginPath();
+    ctx.ellipse(x + 90, y + 25, 90, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#b2bec3';
+    ctx.stroke();
+
+    // Janelas
+    ctx.fillStyle = '#74b9ff';
+    for(let i=0; i<5; i++) {
+        ctx.beginPath();
+        ctx.arc(x + 60 + (i*20), y + 20, 5, 0, Math.PI*2);
+        ctx.fill();
+    }
+
+    // Asa Superior
+    ctx.fillStyle = '#b2bec3';
+    ctx.beginPath();
+    ctx.moveTo(x + 70, y + 10);
+    ctx.lineTo(x + 110, y - 20);
+    ctx.lineTo(x + 130, y - 20);
+    ctx.lineTo(x + 100, y + 10);
+    ctx.fill();
+
+    // Cauda
+    ctx.beginPath();
+    ctx.moveTo(x + 10, y + 15);
+    ctx.lineTo(x - 20, y - 10);
+    ctx.lineTo(x, y + 25);
+    ctx.fill();
+    
+    // Turbina (cor)
+    ctx.fillStyle = '#e17055';
+    ctx.fillRect(x + 80, y + 35, 30, 10);
+}
+
+function update() {
+    if (!gameActive) return;
+    frameCount++;
+
+    player.vx = controls.x * player.speed;
+    player.vy += gravity;
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // Colisão solo
+    player.grounded = false;
+    platforms.forEach(p => {
+        if (player.x < p.x + p.w && player.x + 30 > p.x &&
+            player.y + 45 > p.y && player.y + 45 < p.y + p.h + player.vy) {
+            player.y = p.y - 45;
+            player.vy = 0;
+            player.grounded = true;
+        }
+    });
+
+    // Limites da tela
+    if (player.x < 0) player.x = 0;
+    if (player.x > canvas.width - 30) player.x = canvas.width - 30;
+
+    // Avião
+    airplane.x += airplane.speed;
+    if (airplane.x > canvas.width + 200) airplane.x = -250;
+
+    if (Math.random() < 0.015) {
+        enemies.push({ x: airplane.x + 80, y: airplane.y + 40, vy: 2, color: '#ff6b6b' });
+    }
+
+    bullets.forEach((b, bi) => {
+        b.x += b.vx;
+        if (b.x > canvas.width) bullets.splice(bi, 1);
+        enemies.forEach((en, ei) => {
+            if (b.x < en.x + 30 && b.x + 10 > en.x && b.y < en.y + 40 && b.y + 10 > en.y) {
+                enemies.splice(ei, 1);
+                bullets.splice(bi, 1);
+                score++;
+                scoreEl.innerText = score;
+            }
+        });
+    });
+
+    enemies.forEach((en, ei) => {
+        en.y += en.vy;
+        platforms.forEach(p => {
+            if (en.y + 45 > p.y && en.y + 45 < p.y + 15) {
+                en.vy = 0;
+                // Inimigo anda um pouco
+                en.x -= 1;
+            }
+        });
+
+        if (player.x < en.x + 25 && player.x + 30 > en.x &&
+            player.y < en.y + 40 && player.y + 45 > en.y) {
+            player.health -= 0.5;
+            healthEl.innerText = Math.max(0, Math.floor(player.health));
+            if (player.health <= 0) {
+                gameOver();
+            }
+        }
+        if (en.y > canvas.height) enemies.splice(ei, 1);
+    });
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function gameOver() {
+    gameActive = false;
+    overlay.style.display = 'block';
+    setTimeout(() => {
+        location.reload();
+    }, 3000);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawAirplane();
+
+    ctx.fillStyle = '#2f3542';
+    platforms.forEach(p => {
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = '#57606f';
+        ctx.fillRect(p.x, p.y, p.w, 4); // Topo da plataforma
+    });
+
+    drawStickman(player.x, player.y, player.color, false);
+    
+    ctx.fillStyle = '#ffa502';
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 10, 4));
+
+    enemies.forEach(en => drawStickman(en.x, en.y, en.color, true));
+}
+
+window.addEventListener('keydown', (e) => {
+    if(e.code === 'ArrowRight') controls.x = 1;
+    if(e.code === 'ArrowLeft') controls.x = -1;
+    if(e.code === 'ArrowUp' && player.grounded) player.vy = player.jumpPower;
+    if(e.code === 'Space') fire();
+});
+window.addEventListener('keyup', (e) => {
+    if(e.code === 'ArrowRight' || e.code === 'ArrowLeft') controls.x = 0;
+});
+
+update();
+</script>
+</body>
+</html>

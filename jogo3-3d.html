@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D Chaos Runner & Driver</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87ceeb; touch-action: none; font-family: sans-serif; }
+        #ui-container { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; pointer-events: none; }
+        #joystick-area { width: 100px; height: 100px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+        #stick { width: 40px; height: 40px; background: #fff; border-radius: 50%; opacity: 0.6; }
+        #buttons-area { display: flex; gap: 10px; pointer-events: auto; }
+        .btn { width: 70px; height: 70px; background: rgba(200,0,0,0.6); border: 2px solid #fff; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-align: center; cursor: pointer; }
+        #score-board { position: absolute; top: 10px; width: 100%; text-align: center; color: white; font-size: 20px; text-shadow: 2px 2px #000; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="score-board">MOEDAS: <span id="coins">0</span> | MODO: <span id="status">A PÉ</span></div>
+    
+    <div id="ui-container">
+        <div id="joystick-area"><div id="stick"></div></div>
+        <div id="buttons-area">
+            <div id="btnAction" class="btn">ENTRAR / SAIR</div>
+            <div id="btnJump" class="btn">PULAR</div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- SISTEMA DE ÁUDIO ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(freq, type, duration, vol = 0.1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // --- CENA E RENDER ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.Fog(0x87ceeb, 20, 150);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        const light = new THREE.DirectionalLight(0xffffff, 1.2);
+        light.position.set(10, 20, 10);
+        light.castShadow = true;
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+        // Chão infinito (estilizado)
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        const grid = new THREE.GridHelper(1000, 100, 0xff0000, 0x444444);
+        scene.add(grid);
+
+        // --- CARRO (DIRIGIBILIDADE MELHORADA) ---
+        const car = new THREE.Group();
+        const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 3.2), new THREE.MeshStandardMaterial({ color: 0xbb0000, metalness: 0.7 }));
+        carBody.position.y = 0.6;
+        const carTop = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 1.6), new THREE.MeshStandardMaterial({ color: 0x111111, transparent: true, opacity: 0.8 }));
+        carTop.position.set(0, 1.1, -0.2);
+        car.add(carBody, carTop);
+        
+        const wheels = [];
+        const wGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+        const wMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const wPositions = [[-0.85, 0.4, 1.1], [0.85, 0.4, 1.1], [-0.85, 0.4, -1.1], [0.85, 0.4, -1.1]];
+        wPositions.forEach(p => {
+            const w = new THREE.Mesh(wGeo, wMat);
+            w.rotation.z = Math.PI/2;
+            w.position.set(...p);
+            car.add(w);
+            wheels.push(w);
+        });
+        car.position.set(5, 0, -5);
+        scene.add(car);
+
+        // --- PERSONAGEM COM LÂMINAS DO CAOS ---
+        const player = new THREE.Group();
+        const matPele = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+        const matBlusa = new THREE.MeshStandardMaterial({ color: 0xffff00 }); // Amarela
+        const matCalca = new THREE.MeshStandardMaterial({ color: 0x111111 }); // Preta
+        const matTenis = new THREE.MeshStandardMaterial({ color: 0x800080 }); // Roxo
+
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.3), matBlusa);
+        torso.position.y = 1.1;
+        player.add(torso);
+
+        const cabeca = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), matPele);
+        cabeca.position.y = 0.65;
+        torso.add(cabeca);
+        
+        const nariz = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.2), matPele);
+        nariz.position.z = 0.25;
+        cabeca.add(nariz);
+
+        // Pernas e braços
+        const mLeg = new THREE.BoxGeometry(0.25, 0.7, 0.25);
+        const pEsq = new THREE.Mesh(mLeg, matCalca); pEsq.position.set(-0.15, -0.7, 0);
+        const pDir = new THREE.Mesh(mLeg, matCalca); pDir.position.set(0.15, -0.7, 0);
+        const tEsq = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.15, 0.4), matTenis); tEsq.position.y = -0.35;
+        const tDir = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.15, 0.4), matTenis); tDir.position.y = -0.35;
+        pEsq.add(tEsq); pDir.add(tDir);
+        torso.add(pEsq, pDir);
+
+        const bEsq = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.6, 0.2), matPele); bEsq.position.set(-0.4, 0.1, 0);
+        const bDir = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.6, 0.2), matPele); bDir.position.set(0.4, 0.1, 0);
+        torso.add(bEsq, bDir);
+
+        // LÂMINAS DO CAOS (Correntes e Lâminas)
+        function createBlade() {
+            const gBlade = new THREE.Group();
+            const bladeCorpo = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.5, 0.05), new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 1 }));
+            const ponta = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), new THREE.MeshStandardMaterial({ color: 0xcc0000 }));
+            ponta.position.y = 0.35;
+            gBlade.add(bladeCorpo, ponta);
+            return gBlade;
+        }
+        const laminaEsq = createBlade(); laminaEsq.position.y = -0.4; bEsq.add(laminaEsq);
+        const laminaDir = createBlade(); laminaDir.position.y = -0.4; bDir.add(laminaDir);
+
+        scene.add(player);
+
+        // --- MOEDAS ---
+        const coins = [];
+        for(let i=0; i<40; i++) {
+            const c = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.1,12), new THREE.MeshStandardMaterial({color:0xffd700, metalness:0.8}));
+            c.rotation.x = Math.PI/2;
+            c.position.set((Math.random()-0.5)*40, 0.5, -Math.random()*400);
+            scene.add(c);
+            coins.push(c);
+        }
+
+        // --- LÓGICA DE JOGO ---
+        let modo = "walking"; // walking ou driving
+        let moveInput = { x: 0, z: 0 };
+        let playerVelY = 0;
+        let carSpeed = 0;
+        let carSteer = 0;
+        let score = 0;
+
+        // Controles
+        const keys = {};
+        window.onkeydown = (e) => { 
+            keys[e.code] = true; 
+            if(e.code === 'KeyE') toggleVehicle(); 
+        };
+        window.onkeyup = (e) => keys[e.code] = false;
+
+        document.getElementById('btnAction').ontouchstart = (e) => { e.preventDefault(); toggleVehicle(); };
+        document.getElementById('btnJump').ontouchstart = (e) => { 
+            if(modo === "walking" && player.position.y <= 0.05) {
+                playerVelY = 0.2;
+                playSound(200, 'square', 0.2);
+            }
+        };
+
+        const stickArea = document.getElementById('joystick-area');
+        stickArea.ontouchmove = (e) => {
+            const rect = stickArea.getBoundingClientRect();
+            moveInput.x = (e.touches[0].clientX - (rect.left + 50)) / 40;
+            moveInput.z = (e.touches[0].clientY - (rect.top + 50)) / 40;
+            document.getElementById('stick').style.transform = `translate(${moveInput.x*15}px, ${moveInput.z*15}px)`;
+        };
+        stickArea.ontouchend = () => { moveInput = {x:0, z:0}; document.getElementById('stick').style.transform = `translate(0,0)`; };
+
+        function toggleVehicle() {
+            if(modo === "walking" && player.position.distanceTo(car.position) < 4) {
+                modo = "driving";
+                player.visible = false;
+                document.getElementById('status').innerText = "DIRIGINDO";
+                playSound(80, 'sawtooth', 0.5, 0.2);
+            } else if (modo === "driving") {
+                modo = "walking";
+                player.visible = true;
+                player.position.set(car.position.x + 2.5, 0, car.position.z);
+                document.getElementById('status').innerText = "A PÉ";
+            }
+        }
+
+        function update() {
+            requestAnimationFrame(update);
+            const dt = 0.1;
+            const kX = keys['ArrowLeft'] || keys['KeyA'] ? -1 : (keys['ArrowRight'] || keys['KeyD'] ? 1 : moveInput.x);
+            const kZ = keys['ArrowUp'] || keys['KeyW'] ? -1 : (keys['ArrowDown'] || keys['KeyS'] ? 1 : moveInput.z);
+
+            if(modo === "walking") {
+                if(Math.abs(kX) > 0.1 || Math.abs(kZ) > 0.1) {
+                    player.position.x += kX * 0.12;
+                    player.position.z += kZ * 0.12;
+                    player.rotation.y = Math.atan2(kX, kZ);
+                    // Animação Lâminas e Pernas
+                    pEsq.rotation.x = Math.sin(Date.now()*0.01)*0.7;
+                    pDir.rotation.x = -Math.sin(Date.now()*0.01)*0.7;
+                    bEsq.rotation.x = -Math.sin(Date.now()*0.01)*0.5;
+                    bDir.rotation.x = Math.sin(Date.now()*0.01)*0.5;
+                }
+                player.position.y += playerVelY;
+                if(player.position.y > 0) playerVelY -= 0.01; else { player.position.y = 0; playerVelY = 0; }
+            } 
+            else {
+                // FÍSICA MELHORADA DO CARRO
+                if(Math.abs(kZ) > 0.1) {
+                    carSpeed -= kZ * 0.015; // Aceleração gradual
+                } else {
+                    carSpeed *= 0.98; // Atrito natural
+                }
+                
+                // Limite de velocidade
+                carSpeed = Math.max(-0.4, Math.min(0.8, carSpeed));
+                
+                // Curva baseada na velocidade (mais realista)
+                if(Math.abs(carSpeed) > 0.05) {
+                    const steeringSens = carSpeed > 0 ? 0.04 : -0.04;
+                    car.rotation.y -= kX * steeringSens;
+                }
+
+                car.translateZ(carSpeed);
+                wheels.forEach(w => w.rotation.x += carSpeed);
+                
+                if(Math.abs(carSpeed) > 0.1) playSound(50 + Math.abs(carSpeed)*100, 'sawtooth', 0.05, 0.01);
+            }
+
+            // Coleta de moedas
+            const pos = modo === "walking" ? player.position : car.position;
+            coins.forEach((c, i) => {
+                c.rotation.y += 0.05;
+                if(pos.distanceTo(c.position) < 2) {
+                    scene.remove(c);
+                    coins.splice(i, 1);
+                    score++;
+                    document.getElementById('coins').innerText = score;
+                    playSound(900, 'sine', 0.1);
+                }
+            });
+
+            // Câmera Suave
+            const camTarget = modo === "walking" ? player.position : car.position;
+            camera.position.lerp(new THREE.Vector3(camTarget.x, camTarget.y + 6, camTarget.z + 12), 0.1);
+            camera.lookAt(camTarget);
+
+            renderer.render(scene, camera);
+        }
+        update();
+
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+    </script>
+</body>
+</html>

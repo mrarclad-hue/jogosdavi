@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Arena de Jogos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0a0c;
+            --card-bg: #16161e;
+            --accent-fm: #ff3e3e; /* Vermelho para cenas/filmes */
+            --accent-mn: #4ade80; /* Verde para estilo Minecraft */
+            --accent-3d: #3b82f6; /* Azul para exploração 3D */
+            --accent-tr: #f59e0b; /* Laranja para tiro */
+            --text-main: #ffffff;
+            --text-dim: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 62, 62, 0.05) 0%, transparent 20%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+            margin-top: 20px;
+        }
+
+        header h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            line-height: 1;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            background: linear-gradient(to bottom, #fff, #64748b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        .game-grid {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .game-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 18px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        /* Efeito de clique para Mobile */
+        .game-card:active {
+            transform: scale(0.97);
+            filter: brightness(1.2);
+        }
+
+        .icon-box {
+            width: 55px;
+            height: 55px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.6rem;
+            margin-right: 18px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .info {
+            z-index: 2;
+        }
+
+        .info h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .info p {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.2;
+        }
+
+        /* Estilização por Jogo */
+        .card-fm .icon-box { background: rgba(255, 62, 62, 0.15); color: var(--accent-fm); border: 1px solid var(--accent-fm); }
+        .card-mn .icon-box { background: rgba(74, 222, 128, 0.15); color: var(--accent-mn); border: 1px solid var(--accent-mn); }
+        .card-3d .icon-box { background: rgba(59, 130, 246, 0.15); color: var(--accent-3d); border: 1px solid var(--accent-3d); }
+        .card-tr .icon-box { background: rgba(245, 158, 11, 0.15); color: var(--accent-tr); border: 1px solid var(--accent-tr); }
+
+        /* Seta indicativa lateral */
+        .game-card::after {
+            content: '→';
+            position: absolute;
+            right: 20px;
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            opacity: 0.5;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 30px 0;
+            text-align: center;
+        }
+
+        .badge {
+            background: #1e293b;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>JOGOS DO DAVI</h1>
+        <p>SELECIONE UM JOGO</p>
+    </header>
+
+    <main class="game-grid">
+        
+        <a href="jogo1-fm.html" class="game-card card-fm">
+            <div class="icon-box">🎬</div>
+            <div class="info">
+                <h2>JOGOS DO DAVI
+                </h2>
+                <p>Desafio interativo com cenas.</p>
+            </div>
+        </a>
+
+        <a href="jogo2-mn.html" class="game-card card-mn">
+            <div class="icon-box">🧱</div>
+            <div class="info">
+                <h2>Block World</h2>
+                <p>Construa e explore em blocos.</p>
+            </div>
+        </a>
+
+        <a href="jogo3-3d.html" class="game-card card-3d">
+            <div class="icon-box">🏙️</div>
+            <div class="info">
+                <h2>JOFOW</h2>
+                <p>Explore a cidade em 3D.</p>
+            </div>
+        </a>
+
+        <a href="jogo4-tr.html" class="game-card card-tr">
+            <div class="icon-box">💥</div>
+            <div class="info">
+                <h2>Combat Strike</h2>
+                <p>Teste sua mira e reflexos.</p>
+            </div>
+        </a>
+
+    </main>
+
+    <footer>
+        <span class="badge">V 2.0 - Gaming Hub</span>
+    </footer>
+
+</body>
+</html>
