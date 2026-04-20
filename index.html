@@ -3,63 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Arena de Jogos</title>
+    <title>Game Hub Mobile</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0a0a0c;
-            --card-bg: #16161e;
-            --accent-fm: #ff3e3e; /* Vermelho para cenas/filmes */
-            --accent-mn: #4ade80; /* Verde para estilo Minecraft */
-            --accent-3d: #3b82f6; /* Azul para exploração 3D */
-            --accent-tr: #f59e0b; /* Laranja para tiro */
+            --bg-color: #0d0d12;
+            --card-bg: #1a1a24;
+            --accent-fm: #ff4757; 
+            --accent-mn: #2ed573; 
+            --accent-3d: #1e90ff; 
+            --accent-tr: #ffa502; 
+            --accent-pipa: #e056fd; /* Roxo para o jogo de pipa */
             --text-main: #ffffff;
-            --text-dim: #94a3b8;
+            --text-dim: #a4b0be;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(255, 62, 62, 0.05) 0%, transparent 20%);
+                radial-gradient(circle at top right, rgba(224, 86, 253, 0.1), transparent),
+                radial-gradient(circle at bottom left, rgba(30, 144, 255, 0.1), transparent);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
         }
 
         header {
             text-align: center;
-            margin-bottom: 35px;
-            margin-top: 20px;
+            margin-bottom: 25px;
+            margin-top: 15px;
         }
 
         header h1 {
             font-family: 'Rajdhani', sans-serif;
-            font-size: 2.8rem;
+            font-size: 2.5rem;
             font-weight: 700;
-            line-height: 1;
             text-transform: uppercase;
-            letter-spacing: -1px;
-            background: linear-gradient(to bottom, #fff, #64748b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(255,255,255,0.2);
         }
 
         header p {
             color: var(--text-dim);
-            font-size: 0.9rem;
-            margin-top: 5px;
-            letter-spacing: 1px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
         }
 
         .game-grid {
@@ -67,96 +67,88 @@
             max-width: 450px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
         }
 
         .game-card {
             background: var(--card-bg);
-            border-radius: 16px;
-            padding: 18px;
+            border-radius: 18px;
+            padding: 15px;
             text-decoration: none;
             color: inherit;
             display: flex;
             align-items: center;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: transform 0.1s ease, background 0.2s ease;
         }
 
-        /* Efeito de clique para Mobile */
+        /* Efeito de toque mobile */
         .game-card:active {
-            transform: scale(0.97);
-            filter: brightness(1.2);
+            transform: scale(0.96);
+            background: #252533;
         }
 
         .icon-box {
-            width: 55px;
-            height: 55px;
-            border-radius: 12px;
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.6rem;
-            margin-right: 18px;
+            font-size: 1.5rem;
+            margin-right: 15px;
             flex-shrink: 0;
-            position: relative;
-            z-index: 2;
-        }
-
-        .info {
-            z-index: 2;
         }
 
         .info h2 {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 600;
             margin-bottom: 2px;
         }
 
         .info p {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-dim);
             line-height: 1.2;
         }
 
-        /* Estilização por Jogo */
-        .card-fm .icon-box { background: rgba(255, 62, 62, 0.15); color: var(--accent-fm); border: 1px solid var(--accent-fm); }
-        .card-mn .icon-box { background: rgba(74, 222, 128, 0.15); color: var(--accent-mn); border: 1px solid var(--accent-mn); }
-        .card-3d .icon-box { background: rgba(59, 130, 246, 0.15); color: var(--accent-3d); border: 1px solid var(--accent-3d); }
-        .card-tr .icon-box { background: rgba(245, 158, 11, 0.15); color: var(--accent-tr); border: 1px solid var(--accent-tr); }
-
-        /* Seta indicativa lateral */
-        .game-card::after {
-            content: '→';
-            position: absolute;
-            right: 20px;
-            color: var(--text-dim);
-            font-size: 1.2rem;
-            opacity: 0.5;
-        }
+        /* Cores dos Ícones */
+        .card-fm .icon-box { background: rgba(255, 71, 87, 0.1); color: var(--accent-fm); border: 1px solid var(--accent-fm); }
+        .card-mn .icon-box { background: rgba(46, 213, 115, 0.1); color: var(--accent-mn); border: 1px solid var(--accent-mn); }
+        .card-3d .icon-box { background: rgba(30, 144, 255, 0.1); color: var(--accent-3d); border: 1px solid var(--accent-3d); }
+        .card-tr .icon-box { background: rgba(255, 165, 2, 0.1); color: var(--accent-tr); border: 1px solid var(--accent-tr); }
+        .card-pipa .icon-box { background: rgba(224, 86, 253, 0.1); color: var(--accent-pipa); border: 1px solid var(--accent-pipa); }
 
         footer {
-            margin-top: auto;
-            padding: 30px 0;
+            margin-top: 30px;
+            padding-bottom: 20px;
             text-align: center;
         }
 
-        .badge {
-            background: #1e293b;
-            padding: 4px 10px;
-            border-radius: 20px;
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            background-color: #2ed573;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            box-shadow: 0 0 8px #2ed573;
+        }
+
+        .footer-text {
             font-size: 0.7rem;
-            color: #94a3b8;
-            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>JOGOS DO DAVI</h1>
-        <p>SELECIONE UM JOGO</p>
+        <h1>PLAY STATION</h1>
+        <p>Meus Projetos</p>
     </header>
 
     <main class="game-grid">
@@ -164,9 +156,8 @@
         <a href="jogo1-fm.html" class="game-card card-fm">
             <div class="icon-box">🎬</div>
             <div class="info">
-                <h2>JOGO DE FILME
-                </h2>
-                <p>Desafio interativo com cenas.</p>
+                <h2>Cine Master</h2>
+                <p>Cenas interativas e escolhas.</p>
             </div>
         </a>
 
@@ -174,30 +165,40 @@
             <div class="icon-box">🧱</div>
             <div class="info">
                 <h2>Block World</h2>
-                <p>Construa e explore em blocos.</p>
+                <p>Construção e sobrevivência.</p>
             </div>
         </a>
 
         <a href="jogo3-3d.html" class="game-card card-3d">
             <div class="icon-box">🏙️</div>
             <div class="info">
-                <h2>JOFOW</h2>
-                <p>Explore a cidade em 3D.</p>
+                <h2>City Walk 3D</h2>
+                <p>Explore a cidade em primeira pessoa.</p>
             </div>
         </a>
 
         <a href="jogo4-tr.html" class="game-card card-tr">
-            <div class="icon-box">💥</div>
+            <div class="icon-box">🔫</div>
             <div class="info">
-                <h2>Combat Strike</h2>
-                <p>Teste sua mira e reflexos.</p>
+                <h2>Strike Zone</h2>
+                <p>Combate rápido e mira precisa.</p>
+            </div>
+        </a>
+
+        <a href="jogodepipa.html" class="game-card card-pipa">
+            <div class="icon-box">🪁</div>
+            <div class="info">
+                <h2>Festival de Pipa</h2>
+                <p>Corte as outras e domine o céu.</p>
             </div>
         </a>
 
     </main>
 
     <footer>
-        <span class="badge">V 2.0 - Gaming Hub</span>
+        <div class="footer-text">
+            <span class="status-dot"></span> 5 JOGOS DISPONÍVEIS
+        </div>
     </footer>
 
 </body>
