@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kite Battle 3D - O mestre do Cerol</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Courier New', Courier, monospace; background: #87CEEB; }
+        canvas { display: block; }
+        
+        #hud {
+            position: absolute; top: 20px; left: 20px; color: white;
+            text-shadow: 2px 2px 4px #000; pointer-events: none; z-index: 10;
+        }
+        .stat { font-size: 20px; background: rgba(0,0,0,0.6); padding: 8px 20px; border-radius: 5px; margin-bottom: 8px; border-left: 5px solid #f1c40f; }
+
+        #controls {
+            position: absolute; bottom: 30px; width: 100%;
+            display: flex; justify-content: space-around; align-items: center; padding: 0 20px; box-sizing: border-box;
+        }
+        .btn {
+            width: 70px; height: 70px; background: rgba(255,255,255,0.2);
+            border: 3px solid #fff; border-radius: 50%; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; user-select: none; touch-action: none;
+        }
+        .btn-attack { 
+            width: 120px; height: 120px; border-radius: 20px; 
+            background: radial-gradient(#ff4757, #c0392b); font-size: 20px;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
+        }
+        .d-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; }
+        
+        #msg {
+            position: absolute; top: 40%; width: 100%; text-align: center;
+            color: #f1c40f; font-size: 40px; font-weight: bold;
+            text-shadow: 3px 3px 0 #000; display: none; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="hud">
+    <div class="stat">💰 CARTEIRA: R$ <span id="money">0</span></div>
+    <div class="stat">🪁 CORTES: <span id="kills">0</span></div>
+</div>
+
+<div id="msg">FUI!! + R$ 50.000</div>
+
+<div id="controls">
+    <div class="d-pad">
+        <div></div><div class="btn" id="up">↑</div><div></div>
+        <div class="btn" id="left">←</div><div class="btn" id="down">↓</div><div class="btn" id="right">→</div>
+    </div>
+    <div class="btn btn-attack" id="btn-action">PUXAR<br>(CORTAR)</div>
+</div>
+
+<script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+
+    // --- CONFIGURAÇÃO ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const sun = new THREE.DirectionalLight(0xffffff, 1);
+    sun.position.set(10, 50, 10);
+    scene.add(sun);
+
+    // Chão e Rua
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshLambertMaterial({color: 0x444444}));
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    // --- JOGADOR ---
+    const player = {
+        money: 0,
+        kills: 0,
+        kite: null,
+        line: null,
+        pos: new THREE.Vector3(0, 1, 10)
+    };
+
+    function createKite(color) {
+        const group = new THREE.Group();
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 1.2); shape.lineTo(0.8, 0); shape.lineTo(0, -1); shape.lineTo(-0.8, 0);
+        const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshLambertMaterial({color, side: THREE.DoubleSide}));
+        group.add(mesh);
+        return group;
+    }
+
+    player.kite = createKite(0x3498db);
+    player.kite.position.set(0, 20, -20);
+    scene.add(player.kite);
+
+    // Linha do jogador
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+    player.line = new THREE.Line(new THREE.BufferGeometry(), lineMat);
+    scene.add(player.line);
+
+    // --- INIMIGOS (AI) ---
+    const enemies = [];
+    function spawnEnemy() {
+        const color = Math.random() * 0xffffff;
+        const kite = createKite(color);
+        const x = (Math.random() - 0.5) * 60;
+        const z = -30 - Math.random() * 40;
+        kite.position.set(x, 15 + Math.random() * 15, z);
+        
+        const line = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({color: 0xcccccc}));
+        scene.add(kite, line);
+
+        enemies.push({
+            kite, line, 
+            origin: new THREE.Vector3(x, 1, z + 20),
+            offset: Math.random() * Math.PI * 2,
+            cut: false
+        });
+    }
+
+    for(let i=0; i<8; i++) spawnEnemy();
+
+    // --- LÓGICA ---
+    const input = { up: false, down: false, left: false, right: false, action: false };
+    const bind = (id, k) => {
+        const el = document.getElementById(id);
+        el.onpointerdown = (e) => { e.preventDefault(); input[k] = true; };
+        el.onpointerup = (e) => { e.preventDefault(); input[k] = false; };
+    };
+    bind('up', 'up'); bind('down', 'down'); bind('left', 'left'); bind('right', 'right'); bind('btn-action', 'action');
+
+    function showCutMessage() {
+        const msg = document.getElementById('msg');
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 1500);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Movimento Player
+        const speed = 0.3;
+        if (input.up) player.kite.position.y += speed;
+        if (input.down && player.kite.position.y > 5) player.kite.position.y -= speed;
+        if (input.left) player.kite.position.x -= speed;
+        if (input.right) player.kite.position.x += speed;
+        if (input.action) player.kite.position.z += speed * 0.5;
+        else if (player.kite.position.z > -40) player.kite.position.z -= speed * 0.2;
+
+        // Atualizar Linha Player
+        player.line.geometry.setFromPoints([player.pos, player.kite.position]);
+
+        // IA dos Inimigos
+        enemies.forEach((en, idx) => {
+            if (!en.cut) {
+                // Movimento agressivo circular
+                en.offset += 0.02;
+                en.kite.position.x += Math.sin(en.offset) * 0.2;
+                en.kite.position.y += Math.cos(en.offset * 0.5) * 0.1;
+                
+                // Tentar seguir o jogador de leve
+                en.kite.position.x += (player.kite.position.x - en.kite.position.x) * 0.01;
+
+                en.line.geometry.setFromPoints([en.origin, en.kite.position]);
+
+                // Detecção de Corte (Colisão simples de proximidade)
+                const dist = player.kite.position.distanceTo(en.kite.position);
+                if (dist < 2.5 && input.action) {
+                    en.cut = true;
+                    player.money += 50000;
+                    player.kills += 1;
+                    document.getElementById('money').innerText = player.money.toLocaleString('pt-BR');
+                    document.getElementById('kills').innerText = player.kills;
+                    showCutMessage();
+                    scene.remove(en.line);
+                }
+            } else {
+                // Pipa cortada voando embora
+                en.kite.position.y += 0.1;
+                en.kite.position.z -= 0.5;
+                en.kite.rotation.z += 0.1;
+                if (en.kite.position.z < -200) {
+                    scene.remove(en.kite);
+                    enemies.splice(idx, 1);
+                    spawnEnemy(); // Nasce outra
+                }
+            }
+        });
+
+        // Câmera
+        camera.position.lerp(new THREE.Vector3(player.kite.position.x * 0.5, 8, 25), 0.1);
+        camera.lookAt(player.kite.position.x, player.kite.position.y, player.kite.position.z - 10);
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.onresize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+</script>
+</body>
+</html>
