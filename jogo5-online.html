@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Arena Combat: Mobile Split-Screen</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; touch-action: none; }
+        canvas { display: block; }
+        
+        /* Controles do Jogador 1 (Parte de Baixo) */
+        .controls { position: absolute; width: 100%; height: 150px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-sizing: border-box; }
+        #ctrl-p1 { bottom: 20px; }
+        
+        /* Controles do Jogador 2 (Parte de Cima - Invertido) */
+        #ctrl-p2 { top: 20px; transform: rotate(180deg); }
+
+        .joy-area { width: 80px; height: 80px; background: rgba(255,255,255,0.1); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .stick { width: 35px; height: 35px; background: #fff; border-radius: 50%; opacity: 0.5; }
+        .btn-atk { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="controls" id="ctrl-p2">
+    <div class="joy-area" id="joy2"><div class="stick" id="stick2"></div></div>
+    <div class="btn-atk" id="atk2">FOGO</div>
+</div>
+
+<canvas id="game"></canvas>
+
+<div class="controls" id="ctrl-p1">
+    <div class="joy-area" id="joy1"><div class="stick" id="stick1"></div></div>
+    <div class="btn-atk" id="atk1">FOGO</div>
+</div>
+
+<script type="module">
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const p1 = { x: canvas.width/2, y: canvas.height*0.7, color: '#3498db', joy: {x:0, y:0}, bullets: [] };
+    const p2 = { x: canvas.width/2, y: canvas.height*0.3, color: '#e74c3c', joy: {x:0, y:0}, bullets: [] };
+
+    function setupJoystick(areaId, stickId, player) {
+        const area = document.getElementById(areaId);
+        const stick = document.getElementById(stickId);
+
+        area.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = area.getBoundingClientRect();
+            let tx = (touch.clientX - (rect.left + rect.width/2)) / 40;
+            let ty = (touch.clientY - (rect.top + rect.height/2)) / 40;
+            
+            player.joy.x = Math.max(-1, Math.min(1, tx));
+            player.joy.y = Math.max(-1, Math.min(1, ty));
+            stick.style.transform = `translate(${player.joy.x*20}px, ${player.joy.y*20}px)`;
+        });
+
+        area.addEventListener('touchend', () => {
+            player.joy = {x:0, y:0};
+            stick.style.transform = 'translate(0,0)';
+        });
+    }
+
+    setupJoystick('joy1', 'stick1', p1);
+    setupJoystick('joy2', 'stick2', p2);
+
+    document.getElementById('atk1').ontouchstart = () => p1.bullets.push({x: p1.x, y: p1.y, v: -7});
+    document.getElementById('atk2').ontouchstart = () => p2.bullets.push({x: p2.x, y: p2.y, v: 7});
+
+    function update() {
+        // Movimento P1
+        p1.x += p1.joy.x * 5;
+        p1.y += p1.joy.y * 5;
+        
+        // Movimento P2 (invertido por causa do rotate no CSS)
+        p2.x -= p2.joy.x * 5; 
+        p2.y -= p2.joy.y * 5;
+
+        // Tiros
+        [p1, p2].forEach(p => {
+            p.bullets.forEach((b, i) => {
+                b.y += b.v;
+                if(b.y < 0 || b.y > canvas.height) p.bullets.splice(i, 1);
+            });
+        });
+
+        draw();
+        requestAnimationFrame(update);
+    }
+
+    function draw() {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Linha divisória
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.setLineDash([10, 10]);
+        ctx.beginPath(); ctx.moveTo(0, canvas.height/2); ctx.lineTo(canvas.width, canvas.height/2); ctx.stroke();
+
+        [p1, p2].forEach(p => {
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 20, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.fillStyle = 'white';
+            p.bullets.forEach(b => ctx.fillRect(b.x-2, b.y-5, 4, 10));
+        });
+    }
+
+    update();
+</script>
+</body>
+</html>

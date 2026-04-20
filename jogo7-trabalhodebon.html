@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Firefighter Extreme - Visão Clara</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #87CEEB; touch-action: none; user-select: none; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 2px 2px 4px #000; pointer-events: none; z-index: 10; }
+        .stat { background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid #ff4500; min-width: 200px; }
+        
+        #controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-around; padding: 0 20px; box-sizing: border-box; z-index: 10; pointer-events: none; }
+        #joy-area { width: 100px; height: 100px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+        #stick { width: 40px; height: 40px; background: #fff; border-radius: 50%; opacity: 0.7; }
+        .btn-fire { width: 80px; height: 80px; background: radial-gradient(#ff8c00, #ff4500); border: 3px solid #fff; border-radius: 50%; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 20px #ff4500; pointer-events: auto; text-align: center; font-size: 14px; }
+        
+        #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); color: white; padding: 40px; border-radius: 20px; text-align: center; display: none; z-index: 100; border: 3px solid #ff4500; width: 80%; }
+        button { padding: 15px 30px; font-size: 18px; background: #ff4500; color: white; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; }
+        #camera-hint { position: absolute; top: 50px; width: 100%; text-align: center; color: white; font-weight: bold; text-shadow: 1px 1px 2px #000; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <div class="stat">⏰ TURNO: <span id="clock">06:00</span> (Dia <span id="day">1</span>)</div>
+        <div class="stat">🔥 FOGOS APAGADOS: <span id="score">0</span></div>
+        <div class="stat">🚒 ESTADO: OPERACIONAL</div>
+    </div>
+
+    <div id="camera-hint">Arraste para girar a câmera | Use o Joystick para mover</div>
+
+    <div id="game-over">
+        <h1>TURNO FINALIZADO!</h1>
+        <p>Pontuação de Herói: <span id="final-score">0</span> incêndios</p>
+        <button onclick="location.reload()">RECOMEÇAR</button>
+    </div>
+
+    <div id="controls">
+        <div id="joy-area"><div id="stick"></div></div>
+        <div class="btn-fire" id="btn-water">LANÇAR<br>ÁGUA</div>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- CENA E ILUMINAÇÃO ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Cor de céu para claridade total
+        
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Aumentando a luz para nada ficar escuro
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); 
+        scene.add(ambientLight);
+
+        const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+        sun.position.set(50, 100, 50);
+        scene.add(sun);
+
+        // --- VARIÁVEIS ---
+        let score = 0;
+        let gameMinutes = 0;
+        let isGameOver = false;
+        let fires = [];
+        let waterParticles = [];
+
+        // --- CENÁRIO ---
+        const ground = new THREE.Mesh(
+            new THREE.PlaneGeometry(1000, 1000), 
+            new THREE.MeshStandardMaterial({ color: 0x333333 })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+        scene.add(new THREE.GridHelper(1000, 80, 0x555555, 0x444444));
+
+        const buildings = [];
+        function createCity() {
+            const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
+            for(let i = 0; i < 70; i++) {
+                const h = 15 + Math.random() * 30;
+                const w = 10 + Math.random() * 5;
+                const bMat = new THREE.MeshStandardMaterial({ color: 0x666666 });
+                const building = new THREE.Mesh(buildingGeo, bMat);
+                building.scale.set(w, h, w);
+                building.position.set((Math.random()-0.5)*400, h/2, (Math.random()-0.5)*400);
+                scene.add(building);
+                buildings.push(building);
+
+                if(Math.random() < 0.9) {
+                    for(let f=0; f<3; f++) addFire(building, h);
+                }
+            }
+        }
+
+        function addFire(parent, height) {
+            const fire = new THREE.Mesh(
+                new THREE.SphereGeometry(1.5, 8, 8),
+                new THREE.MeshBasicMaterial({ color: 0xff4500 })
+            );
+            fire.position.set((Math.random()-0.5)*8, (Math.random()-0.5)*height, (Math.random()-0.5)*8);
+            parent.add(fire);
+            fires.push({ mesh: fire, parent: parent, hp: 100 });
+        }
+        createCity();
+
+        // --- CAMINHÃO ---
+        const truck = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 7), new THREE.MeshStandardMaterial({color: 0xcc0000}));
+        body.position.y = 1.5;
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.8, 2), new THREE.MeshStandardMaterial({color: 0x222222}));
+        cab.position.set(0, 2.5, 2);
+        truck.add(body, cab);
+        scene.add(truck);
+
+        // --- CÂMERA 360 ---
+        let camAngle = Math.PI;
+        let isDragging = false;
+        let prevX = 0;
+
+        window.addEventListener('pointerdown', (e) => { if(e.target.tagName === 'CANVAS') { isDragging = true; prevX = e.clientX; } });
+        window.addEventListener('pointermove', (e) => {
+            if(isDragging) {
+                camAngle -= (e.clientX - prevX) * 0.005;
+                prevX = e.clientX;
+            }
+        });
+        window.addEventListener('pointerup', () => isDragging = false);
+
+        // --- CONTROLES ---
+        let joyPos = { x: 0, y: 0 };
+        const joyArea = document.getElementById('joy-area');
+        const stick = document.getElementById('stick');
+
+        joyArea.addEventListener('touchmove', (e) => {
+            const rect = joyArea.getBoundingClientRect();
+            const touch = e.touches[0];
+            joyPos.x = (touch.clientX - (rect.left + 50)) / 40;
+            joyPos.y = (touch.clientY - (rect.top + 50)) / 40;
+            stick.style.transform = `translate(${Math.max(-30, Math.min(30, joyPos.x*30))}px, ${Math.max(-30, Math.min(30, joyPos.y*30))}px)`;
+        });
+        joyArea.addEventListener('touchend', () => { joyPos = {x:0, y:0}; stick.style.transform = 'translate(0,0)'; });
+
+        let shooting = false;
+        document.getElementById('btn-water').onpointerdown = () => shooting = true;
+        document.getElementById('btn-water').onpointerup = () => shooting = false;
+
+        function animate() {
+            if(isGameOver) return;
+            requestAnimationFrame(animate);
+
+            // Tempo
+            gameMinutes += 0.5;
+            document.getElementById('clock').innerText = `${Math.floor((6 + gameMinutes/60)%24).toString().padStart(2,'0')}:00`;
+
+            // Movimento
+            if(Math.abs(joyPos.x) > 0.1 || Math.abs(joyPos.y) > 0.1) {
+                truck.position.x += joyPos.x * 0.5;
+                truck.position.z += joyPos.y * 0.5;
+                truck.rotation.y = Math.atan2(joyPos.x, joyPos.y);
+            }
+
+            // Água
+            if(shooting) {
+                const p = new THREE.Mesh(new THREE.SphereGeometry(0.4), new THREE.MeshBasicMaterial({color: 0x00ccff}));
+                p.position.copy(truck.position).add(new THREE.Vector3(0, 3, 0));
+                const dir = new THREE.Vector3(0, 0.1, 1).applyQuaternion(truck.quaternion).normalize();
+                p.userData = { vel: dir.multiplyScalar(1.5), life: 60 };
+                scene.add(p);
+                waterParticles.push(p);
+            }
+
+            for(let i=waterParticles.length-1; i>=0; i--) {
+                const p = waterParticles[i];
+                p.position.add(p.userData.vel);
+                p.userData.life--;
+                
+                fires.forEach(f => {
+                    if(f.mesh.visible) {
+                        const worldPos = new THREE.Vector3();
+                        f.mesh.getWorldPosition(worldPos);
+                        if(p.position.distanceTo(worldPos) < 4) {
+                            f.mesh.visible = false;
+                            score++;
+                            document.getElementById('score').innerText = score;
+                        }
+                    }
+                });
+                if(p.userData.life <= 0) { scene.remove(p); waterParticles.splice(i,1); }
+            }
+
+            // Câmera
+            camera.position.set(
+                truck.position.x + Math.sin(camAngle)*40,
+                25,
+                truck.position.z + Math.cos(camAngle)*40
+            );
+            camera.lookAt(truck.position);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+        window.onresize = () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); };
+    </script>
+</body>
+</html>
