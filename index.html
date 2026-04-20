@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Center Pro</title>
+    <title>JOGOS DO DAVI</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,6 +20,7 @@
             --clr-pipa: #e056fd;
             --clr-online: #00d2d3;
             --clr-trabalho: #f1f2f6;
+            --clr-hero: #ffdd59; /* Cor para Homem Salvador/Vilão */
         }
 
         * {
@@ -33,8 +34,8 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 0% 0%, rgba(30, 144, 255, 0.15), transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(224, 86, 253, 0.15), transparent 40%);
+                radial-gradient(circle at 0% 0%, rgba(255, 221, 89, 0.1), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(30, 144, 255, 0.1), transparent 40%);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -45,19 +46,20 @@
 
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             margin-top: 10px;
         }
 
         header h1 {
             font-family: 'Rajdhani', sans-serif;
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            background: linear-gradient(to right, #fff, #64748b);
+            letter-spacing: 4px;
+            background: linear-gradient(to bottom, #fff, var(--clr-hero));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(255, 221, 89, 0.3));
         }
 
         .game-grid {
@@ -65,11 +67,12 @@
             max-width: 450px;
             display: grid;
             gap: 12px;
+            padding-bottom: 30px;
         }
 
         .game-card {
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
             border-radius: 20px;
             padding: 16px;
             text-decoration: none;
@@ -95,7 +98,7 @@
             font-size: 1.6rem;
             margin-right: 16px;
             flex-shrink: 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
 
         .info h2 {
@@ -110,7 +113,7 @@
             line-height: 1.2;
         }
 
-        /* Cores Individuais */
+        /* Estilos de Cores */
         .card-fm .icon-box { background: rgba(255, 71, 87, 0.15); color: var(--clr-fm); border: 1px solid var(--clr-fm); }
         .card-mn .icon-box { background: rgba(46, 213, 115, 0.15); color: var(--clr-mn); border: 1px solid var(--clr-mn); }
         .card-3d .icon-box { background: rgba(30, 144, 255, 0.15); color: var(--clr-3d); border: 1px solid var(--clr-3d); }
@@ -118,31 +121,39 @@
         .card-pipa .icon-box { background: rgba(224, 86, 253, 0.15); color: var(--clr-pipa); border: 1px solid var(--clr-pipa); }
         .card-online .icon-box { background: rgba(0, 210, 211, 0.15); color: var(--clr-online); border: 1px solid var(--clr-online); }
         .card-trabalho .icon-box { background: rgba(241, 242, 246, 0.1); color: var(--clr-trabalho); border: 1px solid var(--clr-trabalho); }
+        .card-hero .icon-box { background: rgba(255, 221, 89, 0.15); color: var(--clr-hero); border: 1px solid var(--clr-hero); }
 
         footer {
             margin-top: auto;
-            padding: 30px 0 10px;
-            font-size: 0.75rem;
+            padding: 20px 0;
+            font-size: 0.7rem;
             color: var(--text-dim);
-            text-transform: uppercase;
             letter-spacing: 2px;
-            opacity: 0.6;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>MY GAMES</h1>
+        <h1>JOGOS DO DAVI</h1>
     </header>
 
     <main class="game-grid">
         
+        <a href="homemsalvadorevilão.html" class="game-card card-hero">
+            <div class="icon-box">🦸‍♂️</div>
+            <div class="info">
+                <h2>Salvador ou Vilão?</h2>
+                <p>Escolha seu destino nesta jornada.</p>
+            </div>
+        </a>
+
         <a href="jogo1-fm.html" class="game-card card-fm">
             <div class="icon-box">🎬</div>
             <div class="info">
                 <h2>Cine Master</h2>
-                <p>Cenas e escolhas interativas.</p>
+                <p>Cenas e decisões interativas.</p>
             </div>
         </a>
 
@@ -150,7 +161,7 @@
             <div class="icon-box">🧱</div>
             <div class="info">
                 <h2>Block World</h2>
-                <p>Mundo aberto em blocos.</p>
+                <p>O mundo de blocos no seu celular.</p>
             </div>
         </a>
 
@@ -158,7 +169,7 @@
             <div class="icon-box">🏙️</div>
             <div class="info">
                 <h2>Urban 3D</h2>
-                <p>Exploração urbana realista.</p>
+                <p>Simulador de exploração urbana.</p>
             </div>
         </a>
 
@@ -166,7 +177,7 @@
             <div class="icon-box">🔫</div>
             <div class="info">
                 <h2>Strike Force</h2>
-                <p>Ação e combate intenso.</p>
+                <p>Combate tático e ação.</p>
             </div>
         </a>
 
@@ -174,7 +185,7 @@
             <div class="icon-box">🪁</div>
             <div class="info">
                 <h2>Kite Pro</h2>
-                <p>Desafio de pipas no céu.</p>
+                <p>O melhor festival de pipas.</p>
             </div>
         </a>
 
@@ -182,7 +193,7 @@
             <div class="icon-box">🌐</div>
             <div class="info">
                 <h2>Mundo Online</h2>
-                <p>Jogue com outros jogadores.</p>
+                <p>Conecte-se e jogue agora.</p>
             </div>
         </a>
 
@@ -190,14 +201,14 @@
             <div class="icon-box">💼</div>
             <div class="info">
                 <h2>Projeto Bon</h2>
-                <p>Trabalho especial e missões.</p>
+                <p>Missões e objetivos especiais.</p>
             </div>
         </a>
 
     </main>
 
     <footer>
-        7 Jogos Instalados
+        &copy; DAVI GAMES - 8 PROJETOS ATIVOS
     </footer>
 
 </body>

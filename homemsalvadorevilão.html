@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Spider-Man 2D: Mobile Retro</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
+        canvas { display: block; image-rendering: pixelated; }
+        
+        #ui {
+            position: fixed; top: 10px; left: 10px; color: white;
+            pointer-events: none; text-shadow: 2px 2px #000; z-index: 10;
+        }
+
+        #controls {
+            position: fixed; bottom: 20px; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 20px;
+            box-sizing: border-box; z-index: 20;
+        }
+
+        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); gap: 5px; }
+        .action-buttons { display: flex; gap: 15px; align-items: flex-end; }
+
+        .btn {
+            width: 65px; height: 65px; background: rgba(255, 255, 255, 0.2);
+            border: 3px solid #fff; border-radius: 12px; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 18px; user-select: none;
+            touch-action: none; -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active { background: rgba(255, 255, 255, 0.5); transform: scale(0.92); }
+
+        #btn-web { background: #ed1d24; width: 85px; height: 85px; border-radius: 50%; }
+        #btn-jump { background: #003399; width: 75px; height: 75px; border-radius: 50%; }
+        
+        .health-bar { width: 150px; height: 12px; background: #333; border: 2px solid #fff; margin-top: 5px; }
+        #hp-fill { width: 100%; height: 100%; background: #ff4757; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div>SPIDER-MAN PS2 2D</div>
+    <div class="health-bar"><div id="hp-fill"></div></div>
+</div>
+
+<div id="controls">
+    <div class="d-pad">
+        <div></div><div class="btn" id="up">↑</div><div></div>
+        <div class="btn" id="left">←</div><div class="btn" id="down">↓</div><div class="btn" id="right">→</div>
+    </div>
+
+    <div class="action-buttons">
+        <div class="btn" id="btn-jump">PULO</div>
+        <div class="btn" id="btn-web">TEIA</div>
+    </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const gravity = 0.55;
+const friction = 0.975;
+let cameraX = 0;
+
+const player = {
+    x: 200, y: 100, w: 25, h: 40,
+    vx: 0, vy: 0,
+    speed: 0.75, jumpPower: -14,
+    grounded: false,
+    swinging: false,
+    webX: 0, webY: 0,
+    ropeLength: 0
+};
+
+const buildings = [];
+for(let i=0; i<40; i++) {
+    buildings.push({
+        x: i * 360,
+        w: 160 + Math.random() * 120,
+        h: 200 + Math.random() * 450,
+        color: `hsl(210, 20%, ${10 + Math.random() * 15}%)`
+    });
+}
+
+const input = { left: false, right: false, up: false, down: false, jump: false, web: false };
+
+function setupControl(id, key) {
+    const el = document.getElementById(id);
+    const start = (e) => { 
+        e.preventDefault(); 
+        input[key] = true; 
+        if(key === 'web') startWeb();
+        if(key === 'jump' && player.grounded) { player.vy = player.jumpPower; player.grounded = false; }
+    };
+    const end = (e) => { 
+        e.preventDefault(); 
+        input[key] = false; 
+        if(key === 'web') player.swinging = false;
+    };
+    el.addEventListener('touchstart', start);
+    el.addEventListener('touchend', end);
+    el.addEventListener('mousedown', start);
+    el.addEventListener('mouseup', end);
+}
+
+setupControl('left', 'left');
+setupControl('right', 'right');
+setupControl('up', 'up');
+setupControl('down', 'down');
+setupControl('btn-jump', 'jump');
+setupControl('btn-web', 'web');
+
+function startWeb() {
+    player.webX = player.x + cameraX + 150;
+    player.webY = player.y - 350;
+    const dx = player.x - player.webX;
+    const dy = player.y - player.webY;
+    player.ropeLength = Math.sqrt(dx * dx + dy * dy) * 0.8;
+    player.swinging = true;
+}
+
+function update() {
+    if (input.right) player.vx += player.speed;
+    if (input.left) player.vx -= player.speed;
+
+    if (player.swinging) {
+        const dx = player.x - player.webX;
+        const dy = player.y - player.webY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > player.ropeLength) {
+            const angle = Math.atan2(dy, dx);
+            player.x = player.webX + Math.cos(angle) * player.ropeLength;
+            player.y = player.webY + Math.sin(angle) * player.ropeLength;
+            const vDotDist = (player.vx * dx + player.vy * dy) / dist;
+            player.vx -= (vDotDist * dx) / dist;
+            player.vy -= (vDotDist * dy) / dist;
+        }
+    }
+
+    player.vy += gravity;
+    player.vx *= friction;
+    player.x += player.vx;
+    player.y += player.vy;
+
+    player.grounded = false;
+    buildings.forEach(b => {
+        const bTop = canvas.height - b.h;
+        if (player.x + player.w > b.x && player.x < b.x + b.w) {
+            if (player.vy > 0 && player.y + player.h > bTop && player.y + player.h < bTop + 30) {
+                player.y = bTop - player.h;
+                player.vy = 0;
+                player.grounded = true;
+            }
+        }
+    });
+
+    if (player.y > canvas.height + 500) { player.x = 200; player.y = 100; player.vx = 0; player.vy = 0; }
+
+    cameraX += (player.x - canvas.width / 2 - cameraX) * 0.08;
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.fillStyle = '#000b1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+
+    buildings.forEach(b => {
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, canvas.height - b.h, b.w, b.h);
+        ctx.fillStyle = 'rgba(255,255,200,0.1)';
+        for(let j=0; j<b.w/40; j++) {
+            for(let k=0; k<b.h/40; k++) {
+                if((j+k) % 3 === 0) ctx.fillRect(b.x + 10 + j*40, canvas.height - b.h + 10 + k*40, 15, 15);
+            }
+        }
+    });
+
+    if (player.swinging) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(player.x + player.w/2, player.y + 5);
+        ctx.lineTo(player.webX, player.webY);
+        ctx.stroke();
+    }
+
+    // Spider-Man Character
+    ctx.fillStyle = '#ed1d24'; 
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+    ctx.fillStyle = '#003399'; 
+    ctx.fillRect(player.x + 5, player.y + 15, player.w - 10, player.h - 15);
+    ctx.fillStyle = '#fff'; 
+    ctx.fillRect(player.x + 4, player.y + 6, 6, 5);
+    ctx.fillRect(player.x + 15, player.y + 6, 6, 5);
+
+    ctx.restore();
+}
+
+update();
+window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+</script>
+</body>
+</html>
