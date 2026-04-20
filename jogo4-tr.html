@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elite Battle Royale - Pro</title>
+    <title>Elite Airborne Strike</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #2c3e50; font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #1e272e; font-family: 'Segoe UI', sans-serif; touch-action: none; }
         canvas { display: block; }
         
         #ui { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 10; }
         .stat { 
-            background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 20px;
-            font-size: 18px; font-weight: bold; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 15px;
+            font-size: 18px; font-weight: bold; margin-bottom: 8px; border-left: 5px solid #f1c40f;
         }
 
-        /* Controles */
         #controls-wrapper { 
             position: absolute; bottom: 30px; width: 100%; 
             display: flex; justify-content: space-between; align-items: flex-end;
@@ -24,26 +23,28 @@
         .control-group { display: flex; gap: 20px; pointer-events: auto; }
 
         #joystick-container { 
-            width: 120px; height: 120px; background: rgba(255,255,255,0.1); 
-            border: 2px solid white; border-radius: 50%; position: relative; pointer-events: auto;
+            width: 130px; height: 130px; background: rgba(255,255,255,0.1); 
+            border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; position: relative; pointer-events: auto;
         }
         #joystick-knob { 
-            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; 
-            background: white; border-radius: 50%; pointer-events: none;
+            position: absolute; top: 40px; left: 40px; width: 50px; height: 50px; 
+            background: #fff; border-radius: 50%; pointer-events: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         .action-btn {
-            width: 80px; height: 80px; border-radius: 50%; display: flex; 
+            width: 85px; height: 85px; border-radius: 50%; display: flex; 
             align-items: center; justify-content: center; color: white; 
             font-weight: bold; user-select: none; pointer-events: auto;
-            box-shadow: 0 6px rgba(0,0,0,0.3); active { transform: translateY(4px); box-shadow: none; }
+            box-shadow: 0 6px #000; transition: 0.1s;
         }
-        #btn-jump { background: #2ecc71; border: 4px solid #27ae60; }
-        #btn-shoot { background: #e74c3c; border: 4px solid #c0392b; }
+        .action-btn:active { transform: translateY(4px); box-shadow: 0 2px #000; }
+        #btn-jump { background: #27ae60; border: 3px solid #1e8449; }
+        #btn-shoot { background: #e74c3c; border: 3px solid #c0392b; }
         
         #msg-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9); color: white; padding: 30px; border-radius: 15px;
+            background: rgba(0,0,0,0.9); color: white; padding: 40px; border-radius: 20px;
             text-align: center; display: none; border: 2px solid #f1c40f; z-index: 100;
         }
     </style>
@@ -51,20 +52,20 @@
 <body>
 
 <div id="ui">
-    <div class="stat">KILLS: <span id="score">0</span> / 20</div>
-    <div class="stat">HP: <span id="health">100</span>%</div>
+    <div class="stat">ABATES: <span id="score">0</span> / 20</div>
+    <div class="stat">VIDA: <span id="health">100</span>%</div>
 </div>
 
 <div id="msg-overlay">
-    <h1 id="msg-title">NÍVEL CONCLUÍDO!</h1>
-    <p id="msg-body">A porta apareceu no fim do mapa!</p>
+    <h1 id="msg-title">MISSÃO COMPLETA</h1>
+    <p id="msg-body">O ponto de extração foi liberado!</p>
 </div>
 
 <div id="controls-wrapper">
     <div id="joystick-container"><div id="joystick-knob"></div></div>
     <div class="control-group">
         <div id="btn-jump" class="action-btn">PULAR</div>
-        <div id="btn-shoot" class="action-btn">TIRO</div>
+        <div id="btn-shoot" class="action-btn">FOGO</div>
     </div>
 </div>
 
@@ -80,60 +81,44 @@ const overlay = document.getElementById('msg-overlay');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// --- Configurações ---
-const gravity = 0.8;
+// --- Configurações de Física ---
+const gravity = 0.7;
 let score = 0;
 let currentLevel = 1;
 let gameActive = true;
 let frameCount = 0;
-const worldWidth = 4000;
+const worldWidth = 5000;
 
 const camera = { x: 0 };
 const controls = { x: 0 };
 
 const player = {
-    x: 100, y: 100, w: 40, h: 60,
-    vx: 0, vy: 0, speed: 7, jumpPower: -18,
+    x: 200, y: 100, w: 40, h: 60,
+    vx: 0, vy: 0, speed: 7, jumpPower: -17,
     health: 100, grounded: false, facing: 1,
     color: '#3498db', animPhase: 0
 };
 
-// Mapas (Plataformas)
-const levelMaps = {
-    1: [
-        {x: 0, y: canvas.height-80, w: 4000, h: 80}, // Chão principal reforçado
-        {x: 400, y: canvas.height-250, w: 300, h: 40},
-        {x: 900, y: canvas.height-400, w: 300, h: 40},
-        {x: 1500, y: canvas.height-280, w: 400, h: 40}
-    ],
-    2: [
-        {x: 0, y: canvas.height-80, w: 4000, h: 80},
-        {x: 300, y: canvas.height-200, w: 150, h: 200},
-        {x: 700, y: canvas.height-350, w: 300, h: 40}
-    ],
-    3: [
-        {x: 0, y: canvas.height-80, w: 4000, h: 80},
-        {x: 500, y: canvas.height-300, w: 100, h: 30},
-        {x: 800, y: canvas.height-500, w: 100, h: 30}
-    ],
-    4: [
-        {x: 0, y: canvas.height-80, w: 4000, h: 80},
-        {x: 2000, y: canvas.height-400, w: 1000, h: 40}
-    ]
-};
+// --- Mapas Dinâmicos ---
+const platforms = [
+    {x: 0, y: canvas.height - 80, w: 5000, h: 80}, // Chão principal
+    {x: 600, y: canvas.height - 250, w: 400, h: 40},
+    {x: 1200, y: canvas.height - 400, w: 300, h: 40},
+    {x: 1800, y: canvas.height - 280, w: 500, h: 40},
+    {x: 2600, y: canvas.height - 450, w: 400, h: 40},
+    {x: 3400, y: canvas.height - 250, w: 600, h: 40}
+];
 
-let platforms = levelMaps[1];
 const bullets = [];
 const enemyBullets = [];
 const enemies = [];
-const airplane = { x: -300, y: 80, speed: 5 };
-const exitDoor = { x: 3800, y: 0, w: 70, h: 120, active: false };
+const airplane = { x: -500, y: 100, speed: 4.5, w: 350, h: 100 };
+const exitDoor = { x: 4700, y: 0, w: 80, h: 130, active: false };
 
-// --- LOGICA DE TOQUE REFEITA ---
+// --- Controles de Toque (Joystick Independente) ---
 const joystick = document.getElementById('joystick-container');
 const knob = document.getElementById('joystick-knob');
 
-// Movimento (Analógico)
 joystick.addEventListener('touchstart', (e) => e.preventDefault());
 window.addEventListener('touchmove', (e) => {
     const touch = Array.from(e.touches).find(t => t.target === joystick || joystick.contains(t.target));
@@ -143,13 +128,14 @@ window.addEventListener('touchmove', (e) => {
         const centerY = rect.top + rect.height / 2;
         let dx = touch.clientX - centerX;
         let dy = touch.clientY - centerY;
-        const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+        const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 45);
         const angle = Math.atan2(dy, dx);
         
         knob.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
-        controls.x = Math.cos(angle); // Apenas horizontal
+        controls.x = Math.cos(angle);
     }
 });
+
 window.addEventListener('touchend', (e) => {
     const touch = Array.from(e.touches).find(t => t.target === joystick || joystick.contains(t.target));
     if (!touch) {
@@ -158,7 +144,6 @@ window.addEventListener('touchend', (e) => {
     }
 });
 
-// Botão Pular
 document.getElementById('btn-jump').addEventListener('touchstart', (e) => {
     e.preventDefault();
     if (player.grounded) {
@@ -167,48 +152,102 @@ document.getElementById('btn-jump').addEventListener('touchstart', (e) => {
     }
 });
 
-// Botão Atirar
 document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
     e.preventDefault();
     if(!gameActive) return;
     bullets.push({ 
         x: player.x + (player.facing === 1 ? 45 : -5), 
         y: player.y + 25, 
-        vx: 18 * player.facing 
+        vx: 20 * player.facing 
     });
 });
 
-// --- Desenho do Soldado ---
-function drawSoldier(ctx, x, y, color, facing, isMoving, phase, isEnemy=false) {
+// --- Desenho do Avião Militar ---
+function drawAirplane(ctx, x, y) {
     ctx.save();
+    // Turbinas
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(x + 100, y + 60, 60, 25);
+    ctx.fillRect(x + 220, y + 60, 60, 25);
+    
+    // Efeito de fogo nas turbinas
+    ctx.fillStyle = Math.random() > 0.5 ? '#f39c12' : '#e67e22';
+    ctx.fillRect(x + 85, y + 65, 15, 15);
+    ctx.fillRect(x + 205, y + 65, 15, 15);
+
+    // Corpo Principal
+    ctx.fillStyle = '#7f8c8d';
+    ctx.beginPath();
+    ctx.moveTo(x, y + 50);
+    ctx.lineTo(x + 300, y + 50);
+    ctx.lineTo(x + 350, y + 20); // Nariz
+    ctx.lineTo(x + 300, y + 80);
+    ctx.lineTo(x, y + 80);
+    ctx.closePath();
+    ctx.fill();
+
+    // Asa Superior
+    ctx.fillStyle = '#95a5a6';
+    ctx.fillRect(x + 120, y + 20, 150, 15);
+
+    // Cauda
+    ctx.beginPath();
+    ctx.moveTo(x, y + 50);
+    ctx.lineTo(x - 40, y + 10);
+    ctx.lineTo(x, y + 80);
+    ctx.fill();
+    
+    // Janelas Cockpit
+    ctx.fillStyle = '#3498db';
+    ctx.fillRect(x + 310, y + 45, 20, 10);
+
+    ctx.restore();
+}
+
+// --- Desenho do Personagem ---
+function drawSoldier(ctx, x, y, color, facing, isMoving, phase, isEnemy=false, parachute=false) {
+    ctx.save();
+    
+    // Paraquedas
+    if (parachute) {
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 20, y);
+        ctx.lineTo(x - 20, y - 60);
+        ctx.moveTo(x + 20, y);
+        ctx.lineTo(x + 60, y - 60);
+        ctx.stroke();
+        
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(x + 20, y - 60, 50, Math.PI, 0);
+        ctx.fill();
+    }
+
     ctx.translate(x + 20, y + 30);
     if (facing === -1) ctx.scale(-1, 1);
 
     const limbSwing = isMoving ? Math.sin(phase) * 15 : 0;
 
-    // Pernas (com movimento)
-    ctx.strokeStyle = '#222';
+    // Membros
+    ctx.strokeStyle = '#111';
     ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-limbSwing, 28); ctx.stroke(); // Perna 1
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(limbSwing, 28); ctx.stroke();  // Perna 2
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-limbSwing, 28); ctx.stroke(); 
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(limbSwing, 28); ctx.stroke();  
 
-    // Tronco
+    // Corpo e Cabeça
     ctx.fillStyle = color;
     ctx.fillRect(-12, -20, 24, 35);
-
-    // Braços
-    ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(25, 5); ctx.stroke(); // Braço arma
-
-    // Arma
-    ctx.fillStyle = '#333';
-    ctx.fillRect(15, 0, 25, 10);
-    ctx.fillRect(18, 10, 5, 8);
-
-    // Cabeça
     ctx.fillStyle = '#ffe0bd';
     ctx.fillRect(-10, -35, 20, 20);
-    ctx.fillStyle = isEnemy ? '#c0392b' : '#2c3e50'; 
-    ctx.fillRect(-12, -42, 24, 12); // Capacete
+    ctx.fillStyle = isEnemy ? '#2c3e50' : '#1e3799'; 
+    ctx.fillRect(-13, -42, 26, 12); 
+
+    // Arma
+    ctx.fillStyle = '#222';
+    ctx.fillRect(10, 0, 30, 8);
+    ctx.fillRect(12, 8, 5, 8);
 
     ctx.restore();
 }
@@ -217,7 +256,7 @@ function update() {
     if (!gameActive) return;
     frameCount++;
 
-    // Movimento Horizontal
+    // Lógica do Player
     if (Math.abs(controls.x) > 0.1) {
         player.vx = controls.x * player.speed;
         player.facing = controls.x > 0 ? 1 : -1;
@@ -226,24 +265,15 @@ function update() {
         player.vx *= 0.8;
     }
 
-    // Gravidade e Posição
     player.vy += gravity;
     player.x += player.vx;
     player.y += player.vy;
 
-    // Câmera
-    camera.x = player.x - canvas.width / 3;
-    if (camera.x < 0) camera.x = 0;
-    if (camera.x > worldWidth - canvas.width) camera.x = worldWidth - canvas.width;
-
-    // --- COLISÃO REFEITA PARA NÃO CAIR ---
+    // Colisão Plataformas
     player.grounded = false;
     platforms.forEach(p => {
-        if (player.x + 10 < p.x + p.w && player.x + 30 > p.x) { // Alinhamento X
-            if (player.vy >= 0 && // Caindo
-                player.y + player.h >= p.y && 
-                player.y + player.h <= p.y + p.h + player.vy) {
-                
+        if (player.x + 10 < p.x + p.w && player.x + 30 > p.x) {
+            if (player.vy >= 0 && player.y + player.h >= p.y && player.y + player.h <= p.y + p.h + player.vy) {
                 player.y = p.y - player.h;
                 player.vy = 0;
                 player.grounded = true;
@@ -251,35 +281,46 @@ function update() {
         }
     });
 
-    // Limites de tela
-    if (player.x < 0) player.x = 0;
-    if (player.y > canvas.height) { // Se cair por erro, reseta posição
-        player.y = 0;
-        player.x = 100;
-        player.health -= 20;
-    }
+    // Câmera
+    camera.x = player.x - canvas.width / 3;
+    if (camera.x < 0) camera.x = 0;
+    if (camera.x > worldWidth - canvas.width) camera.x = worldWidth - canvas.width;
 
-    // IA e Avião
+    // Avião e Spawn de Inimigos
     airplane.x += airplane.speed;
-    if (airplane.x > worldWidth + 200) airplane.x = -300;
-    if (Math.random() < 0.02 && enemies.length < 5) {
-        enemies.push({ x: airplane.x + 50, y: airplane.y, vy: 4, state: 'air' });
+    if (airplane.x > worldWidth + 500) airplane.x = -500;
+
+    // Spawn infinito até 20 mortes
+    if (score < 20 && frameCount % 120 === 0 && enemies.length < 8) {
+        enemies.push({ 
+            x: airplane.x + 50, 
+            y: airplane.y + 80, 
+            vy: 2.5, 
+            state: 'falling',
+            color: '#c0392b',
+            facing: -1
+        });
     }
 
+    // Lógica dos Inimigos
     enemies.forEach((en, i) => {
-        if (en.state === 'air') {
+        if (en.state === 'falling') {
             en.y += en.vy;
             platforms.forEach(p => {
                 if (en.x < p.x + p.w && en.x + 30 > p.x && en.y + 60 > p.y && en.y + 60 < p.y + 15) {
-                    en.state = 'grounded';
+                    en.state = 'hunting';
                     en.y = p.y - 60;
                 }
             });
         } else {
-            // IA atira no player
-            if (frameCount % 100 === 0) {
-                const dir = player.x > en.x ? 1 : -1;
-                enemyBullets.push({ x: en.x + 20, y: en.y + 25, vx: dir * 8 });
+            // IA de Perseguição
+            const dir = player.x > en.x ? 1 : -1;
+            en.facing = dir;
+            en.x += dir * 2.5;
+
+            // Ataque Inimigo
+            if (frameCount % 90 === 0 && Math.abs(player.x - en.x) < 500) {
+                enemyBullets.push({ x: en.x + 20, y: en.y + 25, vx: dir * 10 });
             }
         }
     });
@@ -295,8 +336,8 @@ function update() {
                 scoreEl.innerText = score;
                 if(score >= 20) {
                     exitDoor.active = true;
-                    exitDoor.y = platforms[0].y - 120;
-                    showMsg("MISSÃO CUMPRIDA", "A porta de saída se abriu!");
+                    exitDoor.y = platforms[0].y - 130;
+                    showMsg("CAMINHO LIVRE", "Extração disponível no final do mapa!");
                 }
             }
         });
@@ -312,88 +353,71 @@ function update() {
         }
     });
 
-    if (exitDoor.active && player.x > exitDoor.x) nextLevel();
+    if (exitDoor.active && player.x > exitDoor.x) {
+        gameActive = false;
+        showMsg("VITÓRIA", "Missão Elite concluída!");
+    }
 
     draw();
     requestAnimationFrame(update);
 }
 
-function nextLevel() {
-    if (currentLevel < 4) {
-        currentLevel++;
-        score = 0;
-        player.x = 100;
-        player.y = 100;
-        exitDoor.active = false;
-        platforms = levelMaps[currentLevel];
-        scoreEl.innerText = "0";
-        showMsg("NÍVEL " + currentLevel, "Siga em frente!");
-    }
-}
-
 function gameOver() {
     gameActive = false;
-    showMsg("FIM DE JOGO", "Reiniciando...");
-    setTimeout(() => location.reload(), 2000);
+    showMsg("KIA", "O soldado caiu em combate...");
+    setTimeout(() => location.reload(), 3000);
 }
 
 function showMsg(t, b) {
     overlay.style.display = 'block';
     document.getElementById('msg-title').innerText = t;
     document.getElementById('msg-body').innerText = b;
-    setTimeout(() => overlay.style.display = 'none', 3000);
 }
 
 function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Background (Céu)
-    ctx.fillStyle = '#87CEEB';
+    // Fundo Gradiente
+    let sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    sky.addColorStop(0, '#2980b9');
+    sky.addColorStop(1, '#87CEEB');
+    ctx.fillStyle = sky;
     ctx.fillRect(0,0, canvas.width, canvas.height);
 
     ctx.translate(-camera.x, 0);
 
-    // Avião
-    ctx.fillStyle = '#95a5a6';
-    ctx.fillRect(airplane.x, airplane.y, 180, 45);
-    ctx.fillStyle = '#bdc3c7';
-    ctx.fillRect(airplane.x + 60, airplane.y - 20, 40, 85);
+    drawAirplane(ctx, airplane.x, airplane.y);
 
     // Plataformas
-    ctx.fillStyle = '#2c3e50';
+    ctx.fillStyle = '#2d3436';
     platforms.forEach(p => {
         ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = '#34495e'; // Detalhe no topo
+        ctx.fillStyle = '#636e72';
         ctx.fillRect(p.x, p.y, p.w, 10);
     });
 
-    // Porta
+    // Ponto de Extração (Porta)
     if (exitDoor.active) {
-        ctx.fillStyle = '#27ae60';
+        ctx.fillStyle = '#2ecc71';
         ctx.fillRect(exitDoor.x, exitDoor.y, exitDoor.w, exitDoor.h);
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(exitDoor.x + 60, exitDoor.y + 50, 10, 10);
     }
 
     // Personagens
     drawSoldier(ctx, player.x, player.y, player.color, player.facing, Math.abs(player.vx) > 0.5, player.animPhase);
+    
     enemies.forEach(en => {
-        drawSoldier(ctx, en.x, en.y, '#e74c3c', (player.x > en.x ? 1 : -1), en.state === 'grounded', frameCount * 0.2, true);
+        drawSoldier(ctx, en.x, en.y, en.color, en.facing, en.state === 'hunting', frameCount * 0.2, true, en.state === 'falling');
     });
 
-    // Balas
+    // Projéteis
     ctx.fillStyle = '#f1c40f';
-    bullets.forEach(b => ctx.fillRect(b.x, b.y, 15, 6));
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 18, 6));
     ctx.fillStyle = '#e74c3c';
-    enemyBullets.forEach(eb => ctx.fillRect(eb.x, eb.y, 12, 5));
+    enemyBullets.forEach(eb => ctx.fillRect(eb.x, eb.y, 14, 5));
 }
-
-// Suporte a teclado (PC)
-window.addEventListener('keydown', (e) => {
-    if(e.code === 'Space' && player.grounded) player.vy = player.jumpPower;
-    if(e.code === 'KeyF') { // F para atirar no PC
-        bullets.push({ x: player.x + 40, y: player.y + 25, vx: 18 * player.facing });
-    }
-});
 
 update();
 </script>
