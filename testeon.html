@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elite Airborne - Horizontal Pro</title>
+    <title>Elite Airborne - Universal View</title>
     <style>
-        /* Impede seleção, menus de contexto e gestos padrão do navegador */
         * {
-            -webkit-touch-callout: none; /* iOS Safari */
-            -webkit-user-select: none;   /* Safari */
-            -user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
             touch-action: none;
             -webkit-tap-highlight-color: transparent;
         }
@@ -19,88 +18,98 @@
             overflow: hidden; 
             background: #1e272e; 
             font-family: sans-serif; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        canvas { display: block; background: #000; }
+        canvas { 
+            display: block; 
+            background: #000;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
         
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
 
+        /* Botão de Rotação no Canto Superior Direito */
+        #rotate-ui-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            background: rgba(155, 89, 182, 0.8);
+            border: 2px solid #fff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            color: white;
+            font-size: 24px;
+            pointer-events: auto;
+        }
+
         #menu-container {
             position: absolute; width: 100%; height: 100%; background: #1e272e;
             z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            pointer-events: auto;
         }
 
         .panel { 
             background: #2f3640; padding: 15px; border-radius: 15px; 
             border: 2px solid #3498db; text-align: center; color: white; 
-            margin-bottom: 10px; width: 85%; max-width: 500px; 
+            margin-bottom: 10px; width: 85%; max-width: 400px; 
         }
 
-        .btn { 
-            padding: 12px; margin: 5px; border: none; border-radius: 8px; 
-            font-size: 14px; font-weight: bold; color: #fff; cursor: pointer;
-        }
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; }
         .btn-p1 { background: #3498db; width: 45%; }
         .btn-p2 { background: #e67e22; width: 45%; }
-        .btn-map { background: #7f8c8d; flex: 1; margin: 2px; }
+        .btn-map { background: #7f8c8d; flex: 1; margin: 2px; font-size: 10px; }
         .btn-map.selected { background: #27ae60; border: 2px solid #fff; }
-        
-        #rotate-btn {
-            background: #9b59b6; width: 90%; padding: 15px; margin-top: 10px;
-            animation: pulse 2s infinite;
-        }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-
-        /* Ajuste dos controles para Horizontal */
+        /* Controles Adaptáveis */
         #controls { 
             position: absolute; bottom: 20px; width: 100%; 
             display: none; justify-content: space-between; 
-            padding: 0 50px; box-sizing: border-box; 
+            padding: 0 30px; box-sizing: border-box; 
         }
         
+        /* Layout Retrato (Vertical) */
+        @media (orientation: portrait) {
+            #controls { flex-direction: column; align-items: center; gap: 40px; bottom: 50px; }
+            #btn-group-right { display: flex; gap: 50px; }
+        }
+        /* Layout Paisagem (Horizontal) */
+        @media (orientation: landscape) {
+            #controls { flex-direction: row; align-items: flex-end; }
+            #btn-group-right { display: flex; gap: 20px; }
+        }
+
         .control-btn { 
-            width: 85px; height: 85px; border-radius: 50%; 
+            width: 80px; height: 80px; border-radius: 50%; 
             background: rgba(255,255,255,0.25); color: white; 
             display: flex; align-items: center; justify-content: center; 
             font-weight: bold; border: 3px solid rgba(255,255,255,0.4);
-            font-size: 14px;
         }
 
-        #joystick { 
-            width: 130px; height: 130px; 
-            border: 4px solid rgba(255,255,255,0.5); 
-            border-radius: 50%; position: relative; 
-            background: rgba(0,0,0,0.2);
-        }
-        #knob { 
-            width: 50px; height: 50px; background: #fff; 
-            border-radius: 50%; position: absolute; 
-            top: 40px; left: 40px; pointer-events: none; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
+        #joystick { width: 120px; height: 120px; border: 4px solid rgba(255,255,255,0.5); border-radius: 50%; position: relative; }
+        #knob { width: 50px; height: 50px; background: #fff; border-radius: 50%; position: absolute; top: 35px; left: 35px; }
 
-        #stats { 
-            position: absolute; top: 10px; left: 10px; color: white; 
-            font-family: monospace; background: rgba(0,0,0,0.6); 
-            padding: 8px 15px; border-radius: 20px; border: 1px solid #3498db;
-        }
+        #stats { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 20px; font-size: 14px; }
     </style>
 </head>
-<body oncontextmenu="return false;"> <div id="menu-container">
-    <h1 style="color: white; margin-bottom: 5px;">ELITE AIRBORNE</h1>
-    
-    <button id="rotate-btn" class="btn">GIRAR E TELA CHEIA (HORIZONTAL)</button>
+<body oncontextmenu="return false;">
 
+<div id="rotate-ui-btn" class="interactive">🔄</div>
+
+<div id="menu-container">
+    <h2 style="color: white; margin-bottom: 20px;">ELITE AIRBORNE</h2>
+    
     <div class="panel">
-        <h3 style="margin: 5px;">MAPA</h3>
-        <div style="display: flex; width: 100%;">
+        <h4 style="margin: 5px;">MAPA</h4>
+        <div style="display: flex;">
             <div id="map-0" class="btn btn-map selected">URBANO</div>
             <div id="map-1" class="btn btn-map">DESERTO</div>
             <div id="map-2" class="btn btn-map">FLORESTA</div>
@@ -108,21 +117,20 @@
     </div>
 
     <div class="panel">
-        <h3 style="margin: 5px;">BATALHA</h3>
-        <div style="display: flex; justify-content: space-around;">
-            <div id="p1-btn" class="btn btn-p1">CRIAR SALA</div>
+        <h4 style="margin: 5px;">CONEXÃO</h4>
+        <div style="display: flex; justify-content: space-between;">
+            <div id="p1-btn" class="btn btn-p1">CRIAR</div>
             <div id="p2-btn" class="btn btn-p2">ENTRAR</div>
         </div>
     </div>
-    
-    <div id="status-display" style="color: #bdc3c7; font-size: 12px;">Recomendado: Use o celular na horizontal</div>
+    <div id="status-display" style="color: #bdc3c7; font-size: 12px; margin-top: 10px;">Ajuste a tela antes de iniciar</div>
 </div>
 
 <div id="ui-layer">
     <div id="stats">MOEDAS: $<span id="coin-count">0</span></div>
     <div id="controls" class="interactive">
         <div id="joystick"><div id="knob"></div></div>
-        <div style="display: flex; gap: 30px; align-items: center;">
+        <div id="btn-group-right">
             <div id="btn-jump" class="control-btn" style="background: rgba(46, 204, 113, 0.5);">PULAR</div>
             <div id="btn-shoot" class="control-btn" style="background: rgba(231, 76, 60, 0.5);">FOGO</div>
         </div>
@@ -137,51 +145,55 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+// --- RESOLUÇÃO LÓGICA (VISÃO FIXA) ---
+const V_WIDTH = 1280; 
+const V_HEIGHT = 720; 
 
-// --- LÓGICA DE TELA CHEIA E ROTAÇÃO ---
-document.getElementById('rotate-btn').addEventListener('touchstart', async (e) => {
+function resize() {
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    const scale = Math.min(screenW / V_WIDTH, screenH / V_HEIGHT);
+    
+    canvas.width = V_WIDTH * scale;
+    canvas.height = V_HEIGHT * scale;
+    ctx.scale(scale, scale);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Botão de Rotação/Fullscreen
+document.getElementById('rotate-ui-btn').addEventListener('touchstart', async (e) => {
     e.preventDefault();
-    try {
-        if (!document.fullscreenElement) {
-            await document.documentElement.requestFullscreen();
-        }
-        if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock('landscape');
-        }
-    } catch (err) {
-        console.log("Rotação não suportada ou precisa de interação direta.");
+    if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen().catch(e => {});
     }
-    resizeCanvas();
+    if (screen.orientation && screen.orientation.lock) {
+        const newOrient = screen.orientation.type.includes('portrait') ? 'landscape' : 'portrait';
+        await screen.orientation.lock(newOrient).catch(e => {});
+    }
 });
 
 const ID_P1 = "JOGADOR2DUO2026";
 const ID_P2 = "AQUISERABOM2026";
 let peer, conn, isHost = false, gameActive = false;
 
-const player = { x: 200, y: 0, vx: 0, vy: 0, w: 40, h: 60, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false, coins: 0 };
-const remotePlayer = { x: 600, y: 0, targetX: 600, targetY: 0, w: 40, h: 60, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
+const player = { x: 200, y: 0, vx: 0, vy: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false, coins: 0 };
+const remotePlayer = { x: 600, y: 0, targetX: 600, targetY: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
 let bullets = [];
 let selectedMapIndex = 0;
 
 const maps = [
-    { name: 'Urbano', bg: '#2c3e50', plat: '#7f8c8d', rects: [{x: 0, y: 550, w: 3000, h: 200}, {x: 400, y: 400, w: 300, h: 25}, {x: 900, y: 300, w: 300, h: 25}] },
-    { name: 'Deserto', bg: '#f1c40f', plat: '#d35400', rects: [{x: 0, y: 550, w: 3000, h: 200}, {x: 200, y: 420, w: 250, h: 25}, {x: 600, y: 320, w: 250, h: 25}] },
-    { name: 'Floresta', bg: '#27ae60', plat: '#7e5233', rects: [{x: 0, y: 550, w: 3000, h: 200}, {x: 300, y: 400, w: 400, h: 25}, {x: 800, y: 300, w: 300, h: 25}] }
+    { bg: '#2c3e50', plat: '#7f8c8d', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 400, y: 450, w: 300, h: 30}, {x: 900, y: 350, w: 300, h: 30}] },
+    { bg: '#f1c40f', plat: '#d35400', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 200, y: 480, w: 250, h: 30}, {x: 600, y: 380, w: 250, h: 30}] },
+    { bg: '#27ae60', plat: '#7e5233', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 300, y: 450, w: 400, h: 30}, {x: 800, y: 350, w: 300, h: 30}] }
 ];
 
-// --- INPUT SISTEMA ---
 const input = { x: 0, jump: false, shoot: false };
 
 function handleTouch(e) {
-    e.preventDefault(); 
+    e.preventDefault();
     const touches = e.touches;
-    let moveDetected = false;
+    let moveX = 0;
     input.jump = false;
     input.shoot = false;
 
@@ -189,82 +201,54 @@ function handleTouch(e) {
         const el = document.elementFromPoint(t.clientX, t.clientY);
         if (!el) continue;
 
-        // Menu Logic
         if (!gameActive) {
             if (el.id === 'p1-btn') startPeer(ID_P1, true);
             if (el.id === 'p2-btn') startPeer(ID_P2, false);
             if (el.id.includes('map-')) {
                 selectedMapIndex = parseInt(el.id.split('-')[1]);
-                updateMapVisual();
+                document.querySelectorAll('.btn-map').forEach((b, i) => b.classList.toggle('selected', i === selectedMapIndex));
             }
         }
 
-        // Joystick Logic
         if (el.id === 'joystick' || el.id === 'knob') {
             const rect = document.getElementById('joystick').getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            input.x = t.clientX < centerX ? -1 : 1;
-            document.getElementById('knob').style.transform = `translateX(${input.x * 35}px)`;
-            moveDetected = true;
+            moveX = t.clientX < (rect.left + rect.width / 2) ? -1 : 1;
+            document.getElementById('knob').style.transform = `translateX(${moveX * 30}px)`;
         }
         if (el.id === 'btn-jump') input.jump = true;
         if (el.id === 'btn-shoot') input.shoot = true;
     }
-    
-    if (!moveDetected) {
-        input.x = 0;
-        document.getElementById('knob').style.transform = `translateX(0)`;
-    }
-}
-
-function updateMapVisual() {
-    document.querySelectorAll('.btn-map').forEach((b, i) => b.classList.toggle('selected', i === selectedMapIndex));
+    input.x = moveX;
+    if (moveX === 0) document.getElementById('knob').style.transform = `translateX(0)`;
 }
 
 document.addEventListener('touchstart', handleTouch, {passive: false});
 document.addEventListener('touchmove', handleTouch, {passive: false});
 document.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0) {
-        input.x = 0;
-        document.getElementById('knob').style.transform = `translateX(0)`;
-    }
+    if (e.touches.length === 0) { input.x = 0; document.getElementById('knob').style.transform = `translateX(0)`; }
     handleTouch(e);
 }, {passive: false});
 
-// --- NETWORK ---
 function startPeer(id, host) {
+    if (peer) return;
     isHost = host;
     peer = new Peer(id);
-    document.getElementById('status-display').innerText = "Conectando rádio...";
-
+    document.getElementById('status-display').innerText = "Ligando rádio...";
     peer.on('open', () => {
-        document.getElementById('status-display').innerText = host ? "Sala Aberta. Aguardando..." : "Buscando sala...";
+        document.getElementById('status-display').innerText = host ? "Esperando rival..." : "Conectando...";
         if (!host) {
-            setTimeout(() => {
-                conn = peer.connect(ID_P1);
-                conn.on('open', setupNetwork);
-            }, 500);
+            const c = peer.connect(ID_P1);
+            c.on('open', () => { conn = c; setupNetwork(); });
         }
     });
-
-    peer.on('connection', (c) => {
-        conn = c;
-        conn.on('open', () => {
-            conn.send({ type: 'map', index: selectedMapIndex });
-            setupNetwork();
-        });
-    });
+    peer.on('connection', (c) => { conn = c; conn.on('open', () => { conn.send({type:'map', i:selectedMapIndex}); setupNetwork(); })});
 }
 
 function setupNetwork() {
-    conn.on('data', (data) => {
-        if (data.type === 'sync') {
-            remotePlayer.targetX = data.x; remotePlayer.targetY = data.y;
-            remotePlayer.facing = data.facing; remotePlayer.anim = data.anim;
-            remotePlayer.hp = data.hp; remotePlayer.active = true;
-        }
-        if (data.type === 'shoot') bullets.push({ x: data.x, y: data.y, vx: data.vx, owner: 'remote' });
-        if (data.type === 'map') selectedMapIndex = data.index;
+    conn.on('data', d => {
+        if (d.type==='sync') { remotePlayer.targetX=d.x; remotePlayer.targetY=d.y; remotePlayer.facing=d.f; remotePlayer.anim=d.a; remotePlayer.hp=d.h; remotePlayer.active=true; }
+        if (d.type==='shot') bullets.push({ x:d.x, y:d.y, vx:d.v, owner:'remote' });
+        if (d.type==='map') selectedMapIndex = d.i;
     });
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('controls').style.display = 'flex';
@@ -272,22 +256,18 @@ function setupNetwork() {
     gameLoop();
 }
 
-// --- GAME ENGINE ---
 function gameLoop() {
     if (!gameActive) return;
 
-    // Player Physics
     player.vx = input.x * 8;
-    if (input.jump && player.grounded) { player.vy = -16; player.grounded = false; }
+    if (input.jump && player.grounded) { player.vy = -18; player.grounded = false; }
     player.vy += 0.8;
     player.x += player.vx;
     player.y += player.vy;
 
-    // World Bounds
     if (player.x < 0) player.x = 0;
-    if (player.x > 3000 - player.w) player.x = 3000 - player.w;
+    if (player.x > 4000) player.x = 4000;
 
-    // Collisions
     player.grounded = false;
     maps[selectedMapIndex].rects.forEach(p => {
         if (player.x + player.w > p.x && player.x < p.x + p.w) {
@@ -297,33 +277,26 @@ function gameLoop() {
         }
     });
 
-    // Interpolation
     remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.3;
     remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.3;
 
-    // Shooting
-    if (input.shoot && Date.now() % 250 < 30) {
-        const bvx = player.facing * 18;
-        const bx = player.x + (player.facing === 1 ? 40 : 0);
-        bullets.push({ x: bx, y: player.y + 25, vx: bvx, owner: 'me' });
-        conn.send({ type: 'shoot', x: bx, y: player.y + 25, vx: bvx });
+    if (input.shoot && Date.now() % 200 < 30) {
+        const bvx = player.facing * 20;
+        const bx = player.x + (player.facing === 1 ? player.w : 0);
+        bullets.push({ x: bx, y: player.y + 30, vx: bvx, owner: 'me' });
+        conn.send({ type: 'shot', x: bx, y: player.y + 30, v: bvx });
     }
 
-    // Bullets logic
-    for(let i = bullets.length-1; i >=0; i--){
-        let b = bullets[i];
-        b.x += b.vx;
-        if (b.owner === 'remote' && b.x > player.x && b.x < player.x + 40 && b.y > player.y && b.y < player.y + 60) {
+    for(let i=bullets.length-1; i>=0; i--){
+        let b = bullets[i]; b.x += b.vx;
+        if (b.owner==='remote' && b.x > player.x && b.x < player.x + player.w && b.y > player.y && b.y < player.y + player.h) {
             player.hp -= 10; bullets.splice(i, 1);
             if (player.hp <= 0) { player.hp = 100; player.x = isHost ? 100 : 800; player.y = 0; }
-        } else if (b.x < 0 || b.x > 3000) {
-            bullets.splice(i, 1);
-        }
+        } else if (b.x < 0 || b.x > 4000) bullets.splice(i, 1);
     }
 
     if (Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
-
-    conn.send({ type: 'sync', x: player.x, y: player.y, facing: player.facing, anim: player.anim, hp: player.hp });
+    conn.send({ type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp });
     
     draw();
     requestAnimationFrame(gameLoop);
@@ -331,42 +304,40 @@ function gameLoop() {
 
 function draw() {
     const map = maps[selectedMapIndex];
+    ctx.clearRect(0,0,V_WIDTH, V_HEIGHT);
     ctx.fillStyle = map.bg;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
 
     ctx.save();
-    let camX = player.x - canvas.width / 2;
-    camX = Math.max(0, Math.min(camX, 3000 - canvas.width));
+    let camX = player.x - V_WIDTH / 2;
+    camX = Math.max(0, Math.min(camX, 4000 - V_WIDTH));
     ctx.translate(-camX, 0);
 
-    // Map Platforms
     map.rects.forEach(p => {
         ctx.fillStyle = map.plat;
         ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(p.x, p.y, p.w, 5);
     });
 
-    drawSoldier(player.x, player.y, player.color, player.facing, player.anim, player.hp);
-    if (remotePlayer.active) drawSoldier(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp);
+    drawS(player.x, player.y, player.color, player.facing, player.anim, player.hp);
+    if (remotePlayer.active) drawS(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp);
 
     ctx.fillStyle = '#f1c40f';
-    bullets.forEach(b => ctx.fillRect(b.x, b.y, 12, 4));
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 15, 4));
     ctx.restore();
 }
 
-function drawSoldier(x, y, color, facing, anim, hp) {
+function drawS(x, y, color, f, a, h) {
     ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x, y - 20, 40, 6);
-    ctx.fillStyle = hp > 30 ? '#2ecc71' : '#e74c3c'; ctx.fillRect(x, y - 20, 40 * (hp / 100), 6);
-    ctx.translate(x + 20, y + 30);
-    ctx.scale(facing, 1);
-    const leg = Math.sin(anim) * 12;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x, y - 20, 45, 7);
+    ctx.fillStyle = h > 30 ? '#2ecc71' : '#e74c3c'; ctx.fillRect(x, y - 20, 45 * (h / 100), 7);
+    ctx.translate(x + 22, y + 32);
+    ctx.scale(f, 1);
+    const leg = Math.sin(a) * 12;
     ctx.strokeStyle = '#000'; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-leg, 30); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(leg, 30); ctx.stroke();
-    ctx.fillStyle = color; ctx.fillRect(-15, -20, 30, 40);
-    ctx.fillStyle = '#ffe0bd'; ctx.fillRect(-10, -35, 20, 20);
+    ctx.fillStyle = color; ctx.fillRect(-18, -25, 36, 50);
+    ctx.fillStyle = '#ffe0bd'; ctx.fillRect(-12, -45, 24, 24);
     ctx.restore();
 }
 </script>
