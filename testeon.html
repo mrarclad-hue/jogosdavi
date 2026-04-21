@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elite Airborne - Pro Edition</title>
+    <title>Elite Airborne - Universal View</title>
     <style>
         * {
             -webkit-touch-callout: none;
@@ -17,28 +17,32 @@
             margin: 0; 
             overflow: hidden; 
             background: #1e272e; 
-            font-family: 'Segoe UI', sans-serif;
+            font-family: sans-serif; 
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
 
-        canvas { display: block; background: #000; }
+        canvas { 
+            display: block; 
+            background: #000;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
         
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
 
-        /* Botão de Rotação com Feedback */
+        /* Botão de Rotação no Canto Superior Direito */
         #rotate-ui-btn {
             position: absolute;
             top: 15px;
             right: 15px;
-            width: 55px;
-            height: 55px;
-            background: #8e44ad;
-            border: 3px solid #fff;
-            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(155, 89, 182, 0.8);
+            border: 2px solid #fff;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -46,12 +50,6 @@
             color: white;
             font-size: 24px;
             pointer-events: auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: transform 0.1s, background 0.1s;
-        }
-        #rotate-ui-btn:active {
-            transform: scale(0.9) rotate(90deg);
-            background: #9b59b6;
         }
 
         #menu-container {
@@ -62,7 +60,7 @@
         .panel { 
             background: #2f3640; padding: 15px; border-radius: 15px; 
             border: 2px solid #3498db; text-align: center; color: white; 
-            margin-bottom: 10px; width: 85%; max-width: 350px; 
+            margin-bottom: 10px; width: 85%; max-width: 400px; 
         }
 
         .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; }
@@ -71,47 +69,35 @@
         .btn-map { background: #7f8c8d; flex: 1; margin: 2px; font-size: 10px; }
         .btn-map.selected { background: #27ae60; border: 2px solid #fff; }
 
-        /* Controles - SEPARAÇÃO ESQUERDA / DIREITA GARANTIDA */
+        /* Controles Adaptáveis */
         #controls { 
-            position: absolute; 
-            bottom: 30px; 
-            width: 100%; 
-            display: none; 
-            justify-content: space-between; 
-            padding: 0 40px; 
-            box-sizing: border-box; 
-            align-items: flex-end;
+            position: absolute; bottom: 20px; width: 100%; 
+            display: none; justify-content: space-between; 
+            padding: 0 30px; box-sizing: border-box; 
         }
         
+        /* Layout Retrato (Vertical) */
+        @media (orientation: portrait) {
+            #controls { flex-direction: column; align-items: center; gap: 40px; bottom: 50px; }
+            #btn-group-right { display: flex; gap: 50px; }
+        }
+        /* Layout Paisagem (Horizontal) */
+        @media (orientation: landscape) {
+            #controls { flex-direction: row; align-items: flex-end; }
+            #btn-group-right { display: flex; gap: 20px; }
+        }
+
         .control-btn { 
-            width: 85px; height: 85px; border-radius: 50%; 
-            background: rgba(255,255,255,0.2); color: white; 
+            width: 80px; height: 80px; border-radius: 50%; 
+            background: rgba(255,255,255,0.25); color: white; 
             display: flex; align-items: center; justify-content: center; 
             font-weight: bold; border: 3px solid rgba(255,255,255,0.4);
-            margin-bottom: 10px;
         }
 
-        #joystick { 
-            width: 130px; height: 130px; 
-            border: 4px solid rgba(255,255,255,0.3); 
-            border-radius: 50%; position: relative; 
-            background: rgba(255,255,255,0.1);
-        }
-        #knob { 
-            width: 55px; height: 55px; background: #fff; 
-            border-radius: 50%; position: absolute; 
-            top: 37.5px; left: 37.5px; 
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        }
+        #joystick { width: 120px; height: 120px; border: 4px solid rgba(255,255,255,0.5); border-radius: 50%; position: relative; }
+        #knob { width: 50px; height: 50px; background: #fff; border-radius: 50%; position: absolute; top: 35px; left: 35px; }
 
-        #btn-group-right { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
-            align-items: center; 
-        }
-
-        #stats { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; font-size: 14px; border: 1px solid #3498db; }
+        #stats { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 20px; font-size: 14px; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -119,10 +105,10 @@
 <div id="rotate-ui-btn" class="interactive">🔄</div>
 
 <div id="menu-container">
-    <h1 style="color: white; margin-bottom: 20px;">ELITE AIRBORNE</h1>
+    <h2 style="color: white; margin-bottom: 20px;">ELITE AIRBORNE</h2>
     
     <div class="panel">
-        <h4 style="margin: 5px;">SELECIONAR MAPA</h4>
+        <h4 style="margin: 5px;">MAPA</h4>
         <div style="display: flex;">
             <div id="map-0" class="btn btn-map selected">URBANO</div>
             <div id="map-1" class="btn btn-map">DESERTO</div>
@@ -131,23 +117,22 @@
     </div>
 
     <div class="panel">
-        <h4 style="margin: 5px;">MULTIPLAYER</h4>
+        <h4 style="margin: 5px;">CONEXÃO</h4>
         <div style="display: flex; justify-content: space-between;">
             <div id="p1-btn" class="btn btn-p1">CRIAR</div>
             <div id="p2-btn" class="btn btn-p2">ENTRAR</div>
         </div>
     </div>
-    <div id="status-display" style="color: #bdc3c7; font-size: 13px;">Gire a tela para modo paisagem para melhor visão</div>
+    <div id="status-display" style="color: #bdc3c7; font-size: 12px; margin-top: 10px;">Ajuste a tela antes de iniciar</div>
 </div>
 
 <div id="ui-layer">
     <div id="stats">MOEDAS: $<span id="coin-count">0</span></div>
     <div id="controls" class="interactive">
         <div id="joystick"><div id="knob"></div></div>
-        
         <div id="btn-group-right">
-            <div id="btn-jump" class="control-btn" style="background: rgba(46, 204, 113, 0.4);">PULAR</div>
-            <div id="btn-shoot" class="control-btn" style="background: rgba(231, 76, 60, 0.4);">FOGO</div>
+            <div id="btn-jump" class="control-btn" style="background: rgba(46, 204, 113, 0.5);">PULAR</div>
+            <div id="btn-shoot" class="control-btn" style="background: rgba(231, 76, 60, 0.5);">FOGO</div>
         </div>
     </div>
 </div>
@@ -160,6 +145,7 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// --- RESOLUÇÃO LÓGICA (VISÃO FIXA) ---
 const V_WIDTH = 1280; 
 const V_HEIGHT = 720; 
 
@@ -167,24 +153,23 @@ function resize() {
     const screenW = window.innerWidth;
     const screenH = window.innerHeight;
     const scale = Math.min(screenW / V_WIDTH, screenH / V_HEIGHT);
+    
     canvas.width = V_WIDTH * scale;
     canvas.height = V_HEIGHT * scale;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.scale(scale, scale);
 }
 window.addEventListener('resize', resize);
 resize();
 
-// LÓGICA DE ROTAÇÃO E FULLSCREEN
+// Botão de Rotação/Fullscreen
 document.getElementById('rotate-ui-btn').addEventListener('touchstart', async (e) => {
     e.preventDefault();
+    if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen().catch(e => {});
+    }
     if (screen.orientation && screen.orientation.lock) {
-        if (screen.orientation.type.includes('portrait')) {
-            await document.documentElement.requestFullscreen().catch(() => {});
-            await screen.orientation.lock('landscape').catch(() => {});
-        } else {
-            if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
-            await screen.orientation.lock('portrait').catch(() => {});
-        }
+        const newOrient = screen.orientation.type.includes('portrait') ? 'landscape' : 'portrait';
+        await screen.orientation.lock(newOrient).catch(e => {});
     }
 });
 
@@ -198,9 +183,9 @@ let bullets = [];
 let selectedMapIndex = 0;
 
 const maps = [
-    { bg: '#2c3e50', plat: '#7f8c8d', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 400, y: 450, w: 400, h: 30}, {x: 1000, y: 350, w: 400, h: 30}] },
-    { bg: '#d35400', plat: '#e67e22', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 200, y: 480, w: 300, h: 30}, {x: 700, y: 380, w: 300, h: 30}] },
-    { bg: '#1b1464', plat: '#0652DD', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 300, y: 420, w: 500, h: 30}, {x: 900, y: 300, w: 300, h: 30}] }
+    { bg: '#2c3e50', plat: '#7f8c8d', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 400, y: 450, w: 300, h: 30}, {x: 900, y: 350, w: 300, h: 30}] },
+    { bg: '#f1c40f', plat: '#d35400', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 200, y: 480, w: 250, h: 30}, {x: 600, y: 380, w: 250, h: 30}] },
+    { bg: '#27ae60', plat: '#7e5233', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 300, y: 450, w: 400, h: 30}, {x: 800, y: 350, w: 300, h: 30}] }
 ];
 
 const input = { x: 0, jump: false, shoot: false };
@@ -209,7 +194,6 @@ function handleTouch(e) {
     e.preventDefault();
     const touches = e.touches;
     let moveX = 0;
-    let anyJoystick = false;
     input.jump = false;
     input.shoot = false;
 
@@ -217,7 +201,6 @@ function handleTouch(e) {
         const el = document.elementFromPoint(t.clientX, t.clientY);
         if (!el) continue;
 
-        // Menu
         if (!gameActive) {
             if (el.id === 'p1-btn') startPeer(ID_P1, true);
             if (el.id === 'p2-btn') startPeer(ID_P2, false);
@@ -227,24 +210,16 @@ function handleTouch(e) {
             }
         }
 
-        // Joystick Corrigido (Movimento Contínuo)
         if (el.id === 'joystick' || el.id === 'knob') {
             const rect = document.getElementById('joystick').getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const dist = t.clientX - centerX;
-            moveX = dist < 0 ? -1 : 1;
-            
-            // Limita o visual do knob mas mantém o movimento
-            const visualDist = Math.max(-35, Math.min(35, dist));
-            document.getElementById('knob').style.transform = `translateX(${visualDist}px)`;
-            anyJoystick = true;
+            moveX = t.clientX < (rect.left + rect.width / 2) ? -1 : 1;
+            document.getElementById('knob').style.transform = `translateX(${moveX * 30}px)`;
         }
-
         if (el.id === 'btn-jump') input.jump = true;
         if (el.id === 'btn-shoot') input.shoot = true;
     }
     input.x = moveX;
-    if (!anyJoystick) document.getElementById('knob').style.transform = `translateX(0)`;
+    if (moveX === 0) document.getElementById('knob').style.transform = `translateX(0)`;
 }
 
 document.addEventListener('touchstart', handleTouch, {passive: false});
@@ -258,9 +233,9 @@ function startPeer(id, host) {
     if (peer) return;
     isHost = host;
     peer = new Peer(id);
-    document.getElementById('status-display').innerText = "Iniciando rádio...";
+    document.getElementById('status-display').innerText = "Ligando rádio...";
     peer.on('open', () => {
-        document.getElementById('status-display').innerText = host ? "Sinal aberto. Aguardando oponente..." : "Buscando sinal...";
+        document.getElementById('status-display').innerText = host ? "Esperando rival..." : "Conectando...";
         if (!host) {
             const c = peer.connect(ID_P1);
             c.on('open', () => { conn = c; setupNetwork(); });
@@ -290,9 +265,8 @@ function gameLoop() {
     player.x += player.vx;
     player.y += player.vy;
 
-    // Impedir saída do mapa
     if (player.x < 0) player.x = 0;
-    if (player.x > 4000 - player.w) player.x = 4000 - player.w;
+    if (player.x > 4000) player.x = 4000;
 
     player.grounded = false;
     maps[selectedMapIndex].rects.forEach(p => {
@@ -303,8 +277,8 @@ function gameLoop() {
         }
     });
 
-    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.25;
-    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.25;
+    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.3;
+    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.3;
 
     if (input.shoot && Date.now() % 200 < 30) {
         const bvx = player.facing * 20;
@@ -317,7 +291,7 @@ function gameLoop() {
         let b = bullets[i]; b.x += b.vx;
         if (b.owner==='remote' && b.x > player.x && b.x < player.x + player.w && b.y > player.y && b.y < player.y + player.h) {
             player.hp -= 10; bullets.splice(i, 1);
-            if (player.hp <= 0) { player.hp = 100; player.x = isHost ? 200 : 1500; player.y = 0; }
+            if (player.hp <= 0) { player.hp = 100; player.x = isHost ? 100 : 800; player.y = 0; }
         } else if (b.x < 0 || b.x > 4000) bullets.splice(i, 1);
     }
 
@@ -342,33 +316,28 @@ function draw() {
     map.rects.forEach(p => {
         ctx.fillStyle = map.plat;
         ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(p.x, p.y, p.w, 6);
     });
 
-    drawS(player.x, player.y, player.color, player.facing, player.anim, player.hp, "Você");
-    if (remotePlayer.active) drawS(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp, "Rival");
+    drawS(player.x, player.y, player.color, player.facing, player.anim, player.hp);
+    if (remotePlayer.active) drawS(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp);
 
     ctx.fillStyle = '#f1c40f';
-    bullets.forEach(b => ctx.fillRect(b.x, b.y, 18, 5));
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 15, 4));
     ctx.restore();
 }
 
-function drawS(x, y, color, f, a, h, name) {
+function drawS(x, y, color, f, a, h) {
     ctx.save();
-    ctx.fillStyle = 'white'; ctx.font = 'bold 14px Arial'; ctx.fillText(name, x, y - 30);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x, y - 22, 45, 8);
-    ctx.fillStyle = h > 30 ? '#2ecc71' : '#ff4757'; ctx.fillRect(x, y - 22, 45 * (h / 100), 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x, y - 20, 45, 7);
+    ctx.fillStyle = h > 30 ? '#2ecc71' : '#e74c3c'; ctx.fillRect(x, y - 20, 45 * (h / 100), 7);
     ctx.translate(x + 22, y + 32);
     ctx.scale(f, 1);
-    const leg = Math.sin(a) * 14;
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-leg, 32); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(leg, 32); ctx.stroke();
+    const leg = Math.sin(a) * 12;
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-leg, 30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(leg, 30); ctx.stroke();
     ctx.fillStyle = color; ctx.fillRect(-18, -25, 36, 50);
-    ctx.fillStyle = '#34495e'; ctx.fillRect(-18, 0, 36, 15);
-    ctx.fillStyle = '#ffe0bd'; ctx.fillRect(-12, -48, 24, 24);
-    ctx.fillStyle = '#2c3e50'; ctx.fillRect(-14, -52, 28, 10);
+    ctx.fillStyle = '#ffe0bd'; ctx.fillRect(-12, -45, 24, 24);
     ctx.restore();
 }
 </script>
