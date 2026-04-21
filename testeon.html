@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elite Airborne - Battle Mode</title>
+    <title>Elite Airborne - Pro Multiplayer</title>
     <style>
         body { margin: 0; overflow: hidden; background: #1e272e; font-family: sans-serif; touch-action: none; }
         canvas { display: block; background: #2980b9; }
@@ -20,26 +20,28 @@
         #p2-btn { background: #e67e22; }
         #status-display { color: #fff; margin-top: 20px; font-family: monospace; text-align: center; }
 
-        #controls { position: absolute; bottom: 30px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; }
-        .control-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.3); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; pointer-events: auto; user-select: none; }
-        #joystick { width: 120px; height: 120px; border: 3px solid #fff; border-radius: 50%; position: relative; }
-        #knob { width: 50px; height: 50px; background: #fff; border-radius: 50%; position: absolute; top: 35px; left: 35px; }
+        /* Controles flutuantes para não interferir um no outro */
+        #controls { position: absolute; bottom: 30px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; pointer-events: none; }
+        .control-area { pointer-events: auto; }
+        .btn-circle { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.3); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; user-select: none; }
+        #joystick { width: 140px; height: 140px; border: 3px solid #fff; border-radius: 50%; position: relative; }
+        #knob { width: 60px; height: 60px; background: #fff; border-radius: 50%; position: absolute; top: 40px; left: 40px; }
     </style>
 </head>
 <body>
 
 <div id="menu-container">
-    <h1 style="color: white;">ELITE AIRBORNE: BATTLE</h1>
-    <button id="p1-btn" class="btn">JOGADOR 1 (AZUL)</button>
-    <button id="p2-btn" class="btn">JOGADOR 2 (LARANJA)</button>
-    <div id="status-display">Conecte os dispositivos para lutar!</div>
+    <h1 style="color: white;">ELITE AIRBORNE: PRO</h1>
+    <button id="p1-btn" class="btn">JOGADOR 1</button>
+    <button id="p2-btn" class="btn">JOGADOR 2</button>
+    <div id="status-display">Suporte a Multi-Touch Ativado</div>
 </div>
 
 <div id="controls">
-    <div id="joystick"><div id="knob"></div></div>
-    <div style="display: flex; gap: 20px;">
-        <div id="btn-jump" class="control-btn" style="background: #27ae60;">PULAR</div>
-        <div id="btn-shoot" class="control-btn" style="background: #e74c3c;">FOGO</div>
+    <div id="joystick" class="control-area"><div id="knob"></div></div>
+    <div style="display: flex; gap: 20px;" class="control-area">
+        <div id="btn-jump" class="btn-circle" style="background: #27ae60;">PULO</div>
+        <div id="btn-shoot" class="btn-circle" style="background: #e74c3c;">TIRO</div>
     </div>
 </div>
 
@@ -57,25 +59,25 @@ const ID_P1 = "JOGADOR2DUO2026";
 const ID_P2 = "AQUISERABOM2026";
 let peer, conn, isHost = false, gameActive = false;
 
-// Configurações Fixas para Sincronia
 const GROUND_Y = 550;
 const gravity = 0.8;
 
+// Player Local
 const player = { x: 200, y: 0, w: 40, h: 60, vx: 0, vy: 0, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false };
-const remotePlayer = { x: 600, y: 0, w: 40, h: 60, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
+// Player Remoto com variáveis de suavização (Lerp)
+const remotePlayer = { x: 600, y: 0, targetX: 600, targetY: 0, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
 
 const bullets = [];
-const input = { x: 0, jump: false, shoot: false };
 const camera = { x: 0 };
 
-// Plataformas em 3 Níveis
+// Estrutura para Multi-Touch
+const activeInputs = { left: false, right: false, jump: false, shoot: false };
+
 const platforms = [
-    {x: -1000, y: GROUND_Y, w: 7000, h: 200}, // Nível 0 (Chão)
-    {x: 200, y: GROUND_Y - 120, w: 400, h: 20}, // Nível 1
-    {x: 800, y: GROUND_Y - 120, w: 400, h: 20}, // Nível 1
-    {x: 500, y: GROUND_Y - 240, w: 400, h: 20}, // Nível 2
-    {x: 300, y: GROUND_Y - 360, w: 200, h: 20}, // Nível 3
-    {x: 900, y: GROUND_Y - 360, w: 200, h: 20}  // Nível 3
+    {x: -1000, y: GROUND_Y, w: 7000, h: 200},
+    {x: 200, y: GROUND_Y - 140, w: 400, h: 20},
+    {x: 800, y: GROUND_Y - 140, w: 400, h: 20},
+    {x: 500, y: GROUND_Y - 280, w: 400, h: 20}
 ];
 
 // --- CONEXÃO ---
@@ -85,17 +87,11 @@ document.getElementById('p2-btn').onclick = () => { player.color = '#e67e22'; re
 function startPeer(id, host) {
     isHost = host;
     peer = new Peer(id);
-    document.getElementById('status-display').innerText = "Iniciando rádio...";
-
     peer.on('open', () => {
-        document.getElementById('status-display').innerText = "Online! Aguardando oponente...";
+        document.getElementById('status-display').innerText = "Online! Aguardando amigo...";
         if (!isHost) tryConnect();
     });
-
-    peer.on('connection', (c) => {
-        conn = c;
-        setupNetwork();
-    });
+    peer.on('connection', (c) => { conn = c; setupNetwork(); });
 }
 
 function tryConnect() {
@@ -106,9 +102,12 @@ function tryConnect() {
 function setupNetwork() {
     conn.on('data', (data) => {
         if (data.type === 'sync') {
-            remotePlayer.x = data.x; remotePlayer.y = data.y;
-            remotePlayer.facing = data.facing; remotePlayer.anim = data.anim;
-            remotePlayer.hp = data.hp; remotePlayer.active = true;
+            remotePlayer.targetX = data.x;
+            remotePlayer.targetY = data.y;
+            remotePlayer.facing = data.facing;
+            remotePlayer.anim = data.anim;
+            remotePlayer.hp = data.hp;
+            remotePlayer.active = true;
         }
         if (data.type === 'shoot') {
             bullets.push({ x: data.x, y: data.y, vx: data.vx, owner: 'remote' });
@@ -120,42 +119,73 @@ function setupNetwork() {
     gameLoop();
 }
 
-// --- CONTROLES ---
-function handleTouch(e) {
-    const touches = e.touches;
-    input.jump = false; input.shoot = false;
-    for(let i=0; i<touches.length; i++){
-        const t = touches[i];
-        const el = document.elementFromPoint(t.clientX, t.clientY);
-        if (el && (el.id === 'joystick' || el.id === 'knob')) {
-            const rect = document.getElementById('joystick').getBoundingClientRect();
-            input.x = t.clientX > (rect.left + rect.width/2) ? 1 : -1;
-            document.getElementById('knob').style.transform = `translateX(${input.x * 30}px)`;
+// --- CONTROLES MULTI-TOUCH MELHORADOS ---
+function updateInputs(e) {
+    e.preventDefault();
+    // Reset inputs
+    activeInputs.left = false;
+    activeInputs.right = false;
+    activeInputs.jump = false;
+    activeInputs.shoot = false;
+
+    const knob = document.getElementById('knob');
+    const joystickRect = document.getElementById('joystick').getBoundingClientRect();
+    const jCenterX = joystickRect.left + joystickRect.width / 2;
+
+    for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        // Lógica do Joystick
+        if (touch.clientX < window.innerWidth / 2) {
+            if (touch.clientX < jCenterX - 10) activeInputs.left = true;
+            if (touch.clientX > jCenterX + 10) activeInputs.right = true;
+            
+            let offsetX = Math.min(Math.max(touch.clientX - jCenterX, -40), 40);
+            knob.style.transform = `translateX(${offsetX}px)`;
         }
-        if (el && el.id === 'btn-jump') input.jump = true;
-        if (el && el.id === 'btn-shoot') input.shoot = true;
+
+        // Lógica dos Botões
+        if (el) {
+            if (el.id === 'btn-jump') activeInputs.jump = true;
+            if (el.id === 'btn-shoot') activeInputs.shoot = true;
+        }
+    }
+
+    if (e.touches.length === 0 || !Array.from(e.touches).some(t => t.clientX < window.innerWidth / 2)) {
+        knob.style.transform = `translateX(0)`;
     }
 }
-document.addEventListener('touchstart', handleTouch);
-document.addEventListener('touchmove', handleTouch);
-document.addEventListener('touchend', () => { input.x = 0; document.getElementById('knob').style.transform = `translateX(0)`; });
 
-// --- LÓGICA DO JOGO ---
+document.addEventListener('touchstart', updateInputs);
+document.addEventListener('touchmove', updateInputs);
+document.addEventListener('touchend', updateInputs);
+
+// --- LOOP DO JOGO ---
+let lastShootTime = 0;
+
 function gameLoop() {
     if (!gameActive) return;
 
-    // Movimento e Gravidade
-    player.vx = input.x * 7;
-    if (input.jump && player.grounded) { player.vy = -16; player.grounded = false; }
+    // Física Local
+    player.vx = 0;
+    if (activeInputs.left) player.vx = -7;
+    if (activeInputs.right) player.vx = 7;
+    
+    if (activeInputs.jump && player.grounded) {
+        player.vy = -16;
+        player.grounded = false;
+    }
+
     player.vy += gravity;
     player.x += player.vx;
     player.y += player.vy;
 
-    // Colisão com Plataformas
+    // Colisão
     player.grounded = false;
     platforms.forEach(p => {
-        if (player.x + 15 < p.x + p.w && player.x + 25 > p.x) {
-            if (player.vy >= 0 && player.y + player.h >= p.y && player.y + player.h <= p.y + 20) {
+        if (player.x + 10 < p.x + p.w && player.x + 30 > p.x) {
+            if (player.vy >= 0 && player.y + player.h >= p.y && player.y + player.h <= p.y + 25) {
                 player.y = p.y - player.h;
                 player.vy = 0;
                 player.grounded = true;
@@ -163,36 +193,34 @@ function gameLoop() {
         }
     });
 
-    // Atirar e Dano
-    if (input.shoot && Date.now() % 250 < 20) {
+    // Tiro (Permite atirar enquanto corre)
+    if (activeInputs.shoot && Date.now() - lastShootTime > 200) {
         const bx = player.x + (player.facing * 40);
-        const bvx = player.facing * 16;
-        bullets.push({ x: bx, y: player.y + 25, vx: bvx, owner: 'me' });
-        conn.send({ type: 'shoot', x: bx, y: player.y + 25, vx: bvx });
+        bullets.push({ x: bx, y: player.y + 25, vx: player.facing * 16, owner: 'me' });
+        conn.send({ type: 'shoot', x: bx, y: player.y + 25, vx: player.facing * 16 });
+        lastShootTime = Date.now();
     }
 
+    // SUAVIZAÇÃO DO REMOTO (Lerp) - Remove o Teleporte
+    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.2;
+    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.2;
+
+    if (Math.abs(player.vx) > 0.1) {
+        player.facing = player.vx > 0 ? 1 : -1;
+        player.anim += 0.2;
+    }
+
+    // Processar Balas e Dano
     bullets.forEach((b, i) => {
         b.x += b.vx;
-        // Checar se meu tiro acertou o inimigo
-        if (b.owner === 'me' && remotePlayer.active) {
-            if (b.x > remotePlayer.x && b.x < remotePlayer.x + 40 && b.y > remotePlayer.y && b.y < remotePlayer.y + 60) {
-                bullets.splice(i, 1);
-                // O dano é visualizado quando o oponente envia a vida dele atualizada
-            }
-        }
-        // Checar se o tiro do inimigo me acertou
-        if (b.owner === 'remote') {
-            if (b.x > player.x && b.x < player.x + 40 && b.y > player.y && b.y < player.y + 60) {
-                bullets.splice(i, 1);
-                player.hp -= 5;
-                if (player.hp < 0) { player.hp = 100; player.x = isHost ? 200 : 600; player.y = 0; }
-            }
+        if (b.owner === 'remote' && b.x > player.x && b.x < player.x + 40 && b.y > player.y && b.y < player.y + 60) {
+            bullets.splice(i, 1);
+            player.hp -= 5;
+            if(player.hp <= 0) { player.hp = 100; player.x = 300; player.y = 0; }
         }
     });
 
-    if (Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
-
-    // Sincronizar
+    // Enviar dados com frequência alta
     conn.send({ type: 'sync', x: player.x, y: player.y, facing: player.facing, anim: player.anim, hp: player.hp });
 
     camera.x = player.x - canvas.width / 2;
@@ -205,7 +233,7 @@ function draw() {
     ctx.save();
     ctx.translate(-camera.x, 0);
 
-    // Desenhar Plataformas
+    // Plataformas
     platforms.forEach(p => {
         ctx.fillStyle = '#2d3436';
         ctx.fillRect(p.x, p.y, p.w, p.h);
@@ -213,7 +241,7 @@ function draw() {
         ctx.fillRect(p.x, p.y, p.w, 6);
     });
 
-    // Jogadores e Barras de Vida
+    // Jogadores
     drawSoldier(player.x, player.y, player.color, player.facing, player.anim, player.hp);
     if (remotePlayer.active) {
         drawSoldier(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp);
@@ -229,11 +257,8 @@ function draw() {
 function drawSoldier(x, y, color, facing, anim, hp) {
     ctx.save();
     // Barra de Vida
-    const barW = 50;
-    ctx.fillStyle = 'red';
-    ctx.fillRect(x - 5, y - 15, barW, 6);
-    ctx.fillStyle = '#2ecc71';
-    ctx.fillRect(x - 5, y - 15, barW * (hp / 100), 6);
+    ctx.fillStyle = 'red'; ctx.fillRect(x - 5, y - 15, 50, 6);
+    ctx.fillStyle = '#2ecc71'; ctx.fillRect(x - 5, y - 15, 50 * (hp / 100), 6);
 
     ctx.translate(x + 20, y + 30);
     ctx.scale(facing, 1);
