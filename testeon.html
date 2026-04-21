@@ -3,129 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elite Airborne - Horizontal Pro</title>
+    <title>Elite Airborne - Battle Mode</title>
     <style>
-        /* Impede seleção, menus de contexto e gestos padrão do navegador */
-        * {
-            -webkit-touch-callout: none; /* iOS Safari */
-            -webkit-user-select: none;   /* Safari */
-            -user-select: none;
-            touch-action: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #1e272e; 
-            font-family: sans-serif; 
-        }
-
-        canvas { display: block; background: #000; }
+        body { margin: 0; overflow: hidden; background: #1e272e; font-family: sans-serif; touch-action: none; }
+        canvas { display: block; background: #2980b9; }
         
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        .interactive { pointer-events: auto; }
-
         #menu-container {
             position: absolute; width: 100%; height: 100%; background: #1e272e;
-            z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            pointer-events: auto;
+            z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
+        .btn {
+            width: 280px; padding: 20px; margin: 10px; border: none; border-radius: 10px;
+            font-size: 20px; font-weight: bold; cursor: pointer; color: #fff;
+        }
+        #p1-btn { background: #3498db; }
+        #p2-btn { background: #e67e22; }
+        #status-display { color: #fff; margin-top: 20px; font-family: monospace; text-align: center; }
 
-        .panel { 
-            background: #2f3640; padding: 15px; border-radius: 15px; 
-            border: 2px solid #3498db; text-align: center; color: white; 
-            margin-bottom: 10px; width: 85%; max-width: 500px; 
-        }
-
-        .btn { 
-            padding: 12px; margin: 5px; border: none; border-radius: 8px; 
-            font-size: 14px; font-weight: bold; color: #fff; cursor: pointer;
-        }
-        .btn-p1 { background: #3498db; width: 45%; }
-        .btn-p2 { background: #e67e22; width: 45%; }
-        .btn-map { background: #7f8c8d; flex: 1; margin: 2px; }
-        .btn-map.selected { background: #27ae60; border: 2px solid #fff; }
-        
-        #rotate-btn {
-            background: #9b59b6; width: 90%; padding: 15px; margin-top: 10px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-
-        /* Ajuste dos controles para Horizontal */
-        #controls { 
-            position: absolute; bottom: 20px; width: 100%; 
-            display: none; justify-content: space-between; 
-            padding: 0 50px; box-sizing: border-box; 
-        }
-        
-        .control-btn { 
-            width: 85px; height: 85px; border-radius: 50%; 
-            background: rgba(255,255,255,0.25); color: white; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; border: 3px solid rgba(255,255,255,0.4);
-            font-size: 14px;
-        }
-
-        #joystick { 
-            width: 130px; height: 130px; 
-            border: 4px solid rgba(255,255,255,0.5); 
-            border-radius: 50%; position: relative; 
-            background: rgba(0,0,0,0.2);
-        }
-        #knob { 
-            width: 50px; height: 50px; background: #fff; 
-            border-radius: 50%; position: absolute; 
-            top: 40px; left: 40px; pointer-events: none; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        #stats { 
-            position: absolute; top: 10px; left: 10px; color: white; 
-            font-family: monospace; background: rgba(0,0,0,0.6); 
-            padding: 8px 15px; border-radius: 20px; border: 1px solid #3498db;
-        }
+        #controls { position: absolute; bottom: 30px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; }
+        .control-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.3); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; pointer-events: auto; user-select: none; }
+        #joystick { width: 120px; height: 120px; border: 3px solid #fff; border-radius: 50%; position: relative; }
+        #knob { width: 50px; height: 50px; background: #fff; border-radius: 50%; position: absolute; top: 35px; left: 35px; }
     </style>
 </head>
-<body oncontextmenu="return false;"> <div id="menu-container">
-    <h1 style="color: white; margin-bottom: 5px;">ELITE AIRBORNE</h1>
-    
-    <button id="rotate-btn" class="btn">GIRAR E TELA CHEIA (HORIZONTAL)</button>
+<body>
 
-    <div class="panel">
-        <h3 style="margin: 5px;">MAPA</h3>
-        <div style="display: flex; width: 100%;">
-            <div id="map-0" class="btn btn-map selected">URBANO</div>
-            <div id="map-1" class="btn btn-map">DESERTO</div>
-            <div id="map-2" class="btn btn-map">FLORESTA</div>
-        </div>
-    </div>
-
-    <div class="panel">
-        <h3 style="margin: 5px;">BATALHA</h3>
-        <div style="display: flex; justify-content: space-around;">
-            <div id="p1-btn" class="btn btn-p1">CRIAR SALA</div>
-            <div id="p2-btn" class="btn btn-p2">ENTRAR</div>
-        </div>
-    </div>
-    
-    <div id="status-display" style="color: #bdc3c7; font-size: 12px;">Recomendado: Use o celular na horizontal</div>
+<div id="menu-container">
+    <h1 style="color: white;">ELITE AIRBORNE: BATTLE</h1>
+    <button id="p1-btn" class="btn">JOGADOR 1 (AZUL)</button>
+    <button id="p2-btn" class="btn">JOGADOR 2 (LARANJA)</button>
+    <div id="status-display">Conecte os dispositivos para lutar!</div>
 </div>
 
-<div id="ui-layer">
-    <div id="stats">MOEDAS: $<span id="coin-count">0</span></div>
-    <div id="controls" class="interactive">
-        <div id="joystick"><div id="knob"></div></div>
-        <div style="display: flex; gap: 30px; align-items: center;">
-            <div id="btn-jump" class="control-btn" style="background: rgba(46, 204, 113, 0.5);">PULAR</div>
-            <div id="btn-shoot" class="control-btn" style="background: rgba(231, 76, 60, 0.5);">FOGO</div>
-        </div>
+<div id="controls">
+    <div id="joystick"><div id="knob"></div></div>
+    <div style="display: flex; gap: 20px;">
+        <div id="btn-jump" class="control-btn" style="background: #27ae60;">PULAR</div>
+        <div id="btn-shoot" class="control-btn" style="background: #e74c3c;">FOGO</div>
     </div>
 </div>
 
@@ -136,135 +50,69 @@
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-// --- LÓGICA DE TELA CHEIA E ROTAÇÃO ---
-document.getElementById('rotate-btn').addEventListener('touchstart', async (e) => {
-    e.preventDefault();
-    try {
-        if (!document.fullscreenElement) {
-            await document.documentElement.requestFullscreen();
-        }
-        if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock('landscape');
-        }
-    } catch (err) {
-        console.log("Rotação não suportada ou precisa de interação direta.");
-    }
-    resizeCanvas();
-});
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 const ID_P1 = "JOGADOR2DUO2026";
 const ID_P2 = "AQUISERABOM2026";
 let peer, conn, isHost = false, gameActive = false;
 
-const player = { x: 200, y: 0, vx: 0, vy: 0, w: 40, h: 60, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false, coins: 0 };
-const remotePlayer = { x: 600, y: 0, targetX: 600, targetY: 0, w: 40, h: 60, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
-let bullets = [];
-let selectedMapIndex = 0;
+// Configurações Fixas para Sincronia
+const GROUND_Y = 550;
+const gravity = 0.8;
 
-const maps = [
-    { name: 'Urbano', bg: '#2c3e50', plat: '#7f8c8d', rects: [{x: 0, y: 550, w: 3000, h: 200}, {x: 400, y: 400, w: 300, h: 25}, {x: 900, y: 300, w: 300, h: 25}] },
-    { name: 'Deserto', bg: '#f1c40f', plat: '#d35400', rects: [{x: 0, y: 550, w: 3000, h: 200}, {x: 200, y: 420, w: 250, h: 25}, {x: 600, y: 320, w: 250, h: 25}] },
-    { name: 'Floresta', bg: '#27ae60', plat: '#7e5233', rects: [{x: 0, y: 550, w: 3000, h: 200}, {x: 300, y: 400, w: 400, h: 25}, {x: 800, y: 300, w: 300, h: 25}] }
+const player = { x: 200, y: 0, w: 40, h: 60, vx: 0, vy: 0, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false };
+const remotePlayer = { x: 600, y: 0, w: 40, h: 60, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
+
+const bullets = [];
+const input = { x: 0, jump: false, shoot: false };
+const camera = { x: 0 };
+
+// Plataformas em 3 Níveis
+const platforms = [
+    {x: -1000, y: GROUND_Y, w: 7000, h: 200}, // Nível 0 (Chão)
+    {x: 200, y: GROUND_Y - 120, w: 400, h: 20}, // Nível 1
+    {x: 800, y: GROUND_Y - 120, w: 400, h: 20}, // Nível 1
+    {x: 500, y: GROUND_Y - 240, w: 400, h: 20}, // Nível 2
+    {x: 300, y: GROUND_Y - 360, w: 200, h: 20}, // Nível 3
+    {x: 900, y: GROUND_Y - 360, w: 200, h: 20}  // Nível 3
 ];
 
-// --- INPUT SISTEMA ---
-const input = { x: 0, jump: false, shoot: false };
+// --- CONEXÃO ---
+document.getElementById('p1-btn').onclick = () => { player.color = '#3498db'; remotePlayer.color = '#e67e22'; startPeer(ID_P1, true); };
+document.getElementById('p2-btn').onclick = () => { player.color = '#e67e22'; remotePlayer.color = '#3498db'; startPeer(ID_P2, false); };
 
-function handleTouch(e) {
-    e.preventDefault(); 
-    const touches = e.touches;
-    let moveDetected = false;
-    input.jump = false;
-    input.shoot = false;
-
-    for (let t of touches) {
-        const el = document.elementFromPoint(t.clientX, t.clientY);
-        if (!el) continue;
-
-        // Menu Logic
-        if (!gameActive) {
-            if (el.id === 'p1-btn') startPeer(ID_P1, true);
-            if (el.id === 'p2-btn') startPeer(ID_P2, false);
-            if (el.id.includes('map-')) {
-                selectedMapIndex = parseInt(el.id.split('-')[1]);
-                updateMapVisual();
-            }
-        }
-
-        // Joystick Logic
-        if (el.id === 'joystick' || el.id === 'knob') {
-            const rect = document.getElementById('joystick').getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            input.x = t.clientX < centerX ? -1 : 1;
-            document.getElementById('knob').style.transform = `translateX(${input.x * 35}px)`;
-            moveDetected = true;
-        }
-        if (el.id === 'btn-jump') input.jump = true;
-        if (el.id === 'btn-shoot') input.shoot = true;
-    }
-    
-    if (!moveDetected) {
-        input.x = 0;
-        document.getElementById('knob').style.transform = `translateX(0)`;
-    }
-}
-
-function updateMapVisual() {
-    document.querySelectorAll('.btn-map').forEach((b, i) => b.classList.toggle('selected', i === selectedMapIndex));
-}
-
-document.addEventListener('touchstart', handleTouch, {passive: false});
-document.addEventListener('touchmove', handleTouch, {passive: false});
-document.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0) {
-        input.x = 0;
-        document.getElementById('knob').style.transform = `translateX(0)`;
-    }
-    handleTouch(e);
-}, {passive: false});
-
-// --- NETWORK ---
 function startPeer(id, host) {
     isHost = host;
     peer = new Peer(id);
-    document.getElementById('status-display').innerText = "Conectando rádio...";
+    document.getElementById('status-display').innerText = "Iniciando rádio...";
 
     peer.on('open', () => {
-        document.getElementById('status-display').innerText = host ? "Sala Aberta. Aguardando..." : "Buscando sala...";
-        if (!host) {
-            setTimeout(() => {
-                conn = peer.connect(ID_P1);
-                conn.on('open', setupNetwork);
-            }, 500);
-        }
+        document.getElementById('status-display').innerText = "Online! Aguardando oponente...";
+        if (!isHost) tryConnect();
     });
 
     peer.on('connection', (c) => {
         conn = c;
-        conn.on('open', () => {
-            conn.send({ type: 'map', index: selectedMapIndex });
-            setupNetwork();
-        });
+        setupNetwork();
     });
+}
+
+function tryConnect() {
+    const c = peer.connect(ID_P1);
+    c.on('open', () => { conn = c; setupNetwork(); });
 }
 
 function setupNetwork() {
     conn.on('data', (data) => {
         if (data.type === 'sync') {
-            remotePlayer.targetX = data.x; remotePlayer.targetY = data.y;
+            remotePlayer.x = data.x; remotePlayer.y = data.y;
             remotePlayer.facing = data.facing; remotePlayer.anim = data.anim;
             remotePlayer.hp = data.hp; remotePlayer.active = true;
         }
-        if (data.type === 'shoot') bullets.push({ x: data.x, y: data.y, vx: data.vx, owner: 'remote' });
-        if (data.type === 'map') selectedMapIndex = data.index;
+        if (data.type === 'shoot') {
+            bullets.push({ x: data.x, y: data.y, vx: data.vx, owner: 'remote' });
+        }
     });
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('controls').style.display = 'flex';
@@ -272,99 +120,127 @@ function setupNetwork() {
     gameLoop();
 }
 
-// --- GAME ENGINE ---
+// --- CONTROLES ---
+function handleTouch(e) {
+    const touches = e.touches;
+    input.jump = false; input.shoot = false;
+    for(let i=0; i<touches.length; i++){
+        const t = touches[i];
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        if (el && (el.id === 'joystick' || el.id === 'knob')) {
+            const rect = document.getElementById('joystick').getBoundingClientRect();
+            input.x = t.clientX > (rect.left + rect.width/2) ? 1 : -1;
+            document.getElementById('knob').style.transform = `translateX(${input.x * 30}px)`;
+        }
+        if (el && el.id === 'btn-jump') input.jump = true;
+        if (el && el.id === 'btn-shoot') input.shoot = true;
+    }
+}
+document.addEventListener('touchstart', handleTouch);
+document.addEventListener('touchmove', handleTouch);
+document.addEventListener('touchend', () => { input.x = 0; document.getElementById('knob').style.transform = `translateX(0)`; });
+
+// --- LÓGICA DO JOGO ---
 function gameLoop() {
     if (!gameActive) return;
 
-    // Player Physics
-    player.vx = input.x * 8;
+    // Movimento e Gravidade
+    player.vx = input.x * 7;
     if (input.jump && player.grounded) { player.vy = -16; player.grounded = false; }
-    player.vy += 0.8;
+    player.vy += gravity;
     player.x += player.vx;
     player.y += player.vy;
 
-    // World Bounds
-    if (player.x < 0) player.x = 0;
-    if (player.x > 3000 - player.w) player.x = 3000 - player.w;
-
-    // Collisions
+    // Colisão com Plataformas
     player.grounded = false;
-    maps[selectedMapIndex].rects.forEach(p => {
-        if (player.x + player.w > p.x && player.x < p.x + p.w) {
-            if (player.vy >= 0 && player.y + player.h <= p.y + 10 && player.y + player.h + player.vy >= p.y) {
-                player.y = p.y - player.h; player.vy = 0; player.grounded = true;
+    platforms.forEach(p => {
+        if (player.x + 15 < p.x + p.w && player.x + 25 > p.x) {
+            if (player.vy >= 0 && player.y + player.h >= p.y && player.y + player.h <= p.y + 20) {
+                player.y = p.y - player.h;
+                player.vy = 0;
+                player.grounded = true;
             }
         }
     });
 
-    // Interpolation
-    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.3;
-    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.3;
-
-    // Shooting
-    if (input.shoot && Date.now() % 250 < 30) {
-        const bvx = player.facing * 18;
-        const bx = player.x + (player.facing === 1 ? 40 : 0);
+    // Atirar e Dano
+    if (input.shoot && Date.now() % 250 < 20) {
+        const bx = player.x + (player.facing * 40);
+        const bvx = player.facing * 16;
         bullets.push({ x: bx, y: player.y + 25, vx: bvx, owner: 'me' });
         conn.send({ type: 'shoot', x: bx, y: player.y + 25, vx: bvx });
     }
 
-    // Bullets logic
-    for(let i = bullets.length-1; i >=0; i--){
-        let b = bullets[i];
+    bullets.forEach((b, i) => {
         b.x += b.vx;
-        if (b.owner === 'remote' && b.x > player.x && b.x < player.x + 40 && b.y > player.y && b.y < player.y + 60) {
-            player.hp -= 10; bullets.splice(i, 1);
-            if (player.hp <= 0) { player.hp = 100; player.x = isHost ? 100 : 800; player.y = 0; }
-        } else if (b.x < 0 || b.x > 3000) {
-            bullets.splice(i, 1);
+        // Checar se meu tiro acertou o inimigo
+        if (b.owner === 'me' && remotePlayer.active) {
+            if (b.x > remotePlayer.x && b.x < remotePlayer.x + 40 && b.y > remotePlayer.y && b.y < remotePlayer.y + 60) {
+                bullets.splice(i, 1);
+                // O dano é visualizado quando o oponente envia a vida dele atualizada
+            }
         }
-    }
+        // Checar se o tiro do inimigo me acertou
+        if (b.owner === 'remote') {
+            if (b.x > player.x && b.x < player.x + 40 && b.y > player.y && b.y < player.y + 60) {
+                bullets.splice(i, 1);
+                player.hp -= 5;
+                if (player.hp < 0) { player.hp = 100; player.x = isHost ? 200 : 600; player.y = 0; }
+            }
+        }
+    });
 
     if (Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
 
+    // Sincronizar
     conn.send({ type: 'sync', x: player.x, y: player.y, facing: player.facing, anim: player.anim, hp: player.hp });
-    
+
+    camera.x = player.x - canvas.width / 2;
     draw();
     requestAnimationFrame(gameLoop);
 }
 
 function draw() {
-    const map = maps[selectedMapIndex];
-    ctx.fillStyle = map.bg;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    let camX = player.x - canvas.width / 2;
-    camX = Math.max(0, Math.min(camX, 3000 - canvas.width));
-    ctx.translate(-camX, 0);
+    ctx.translate(-camera.x, 0);
 
-    // Map Platforms
-    map.rects.forEach(p => {
-        ctx.fillStyle = map.plat;
+    // Desenhar Plataformas
+    platforms.forEach(p => {
+        ctx.fillStyle = '#2d3436';
         ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(p.x, p.y, p.w, 5);
+        ctx.fillStyle = '#27ae60';
+        ctx.fillRect(p.x, p.y, p.w, 6);
     });
 
+    // Jogadores e Barras de Vida
     drawSoldier(player.x, player.y, player.color, player.facing, player.anim, player.hp);
-    if (remotePlayer.active) drawSoldier(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp);
+    if (remotePlayer.active) {
+        drawSoldier(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp);
+    }
 
+    // Balas
     ctx.fillStyle = '#f1c40f';
-    bullets.forEach(b => ctx.fillRect(b.x, b.y, 12, 4));
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 15, 5));
+
     ctx.restore();
 }
 
 function drawSoldier(x, y, color, facing, anim, hp) {
     ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x, y - 20, 40, 6);
-    ctx.fillStyle = hp > 30 ? '#2ecc71' : '#e74c3c'; ctx.fillRect(x, y - 20, 40 * (hp / 100), 6);
+    // Barra de Vida
+    const barW = 50;
+    ctx.fillStyle = 'red';
+    ctx.fillRect(x - 5, y - 15, barW, 6);
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(x - 5, y - 15, barW * (hp / 100), 6);
+
     ctx.translate(x + 20, y + 30);
     ctx.scale(facing, 1);
-    const leg = Math.sin(anim) * 12;
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-leg, 30); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(leg, 30); ctx.stroke();
+    const legMove = Math.sin(anim) * 10;
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-legMove, 30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(legMove, 30); ctx.stroke();
     ctx.fillStyle = color; ctx.fillRect(-15, -20, 30, 40);
     ctx.fillStyle = '#ffe0bd'; ctx.fillRect(-10, -35, 20, 20);
     ctx.restore();
