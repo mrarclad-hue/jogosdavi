@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Corrida Ultra Velocidade - Dia Claro</title>
+    <style>
+        /* Bloqueio total de menus de compartilhamento e seleção */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            outline: none;
+        }
+
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #87CEEB; 
+            font-family: 'Arial Black', sans-serif; 
+            touch-action: none; 
+        }
+
+        canvas { display: block; }
+        
+        #hud {
+            position: absolute; top: 20px; left: 20px; color: white;
+            text-shadow: 2px 2px 4px #000; pointer-events: none; z-index: 10;
+        }
+        .stat { background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px; margin-bottom: 5px; border-left: 5px solid #00ff00; min-width: 220px; }
+        
+        #controls {
+            position: absolute; bottom: 30px; width: 100%;
+            display: flex; justify-content: space-around; align-items: center; padding: 0 20px; box-sizing: border-box;
+            z-index: 20;
+        }
+        
+        #joy-area { 
+            width: 100px; height: 100px; background: rgba(255,255,255,0.3); 
+            border: 3px solid #fff; border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; pointer-events: auto; 
+        }
+        #stick { width: 40px; height: 40px; background: #fff; border-radius: 50%; }
+
+        #btn-gas { 
+            width: 100px; height: 100px; background: #2ecc71; border: 4px solid #fff; border-radius: 50%; 
+            color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 6px #27ae60; pointer-events: auto;
+        }
+
+        #win-screen {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95); color: #2ecc71; padding: 40px; border-radius: 20px;
+            text-align: center; display: none; z-index: 100; border: 5px solid #2ecc71; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+        button { padding: 15px 30px; font-size: 18px; background: #2ecc71; color: white; border: none; border-radius: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="hud">
+    <div class="stat">🏁 POSIÇÃO: <span id="rank">1</span>º / 6</div>
+    <div class="stat">🚀 VELOCIDADE: <span id="speed">0</span> KM/H</div>
+    <div class="stat">🛣️ DISTÂNCIA: <span id="dist">0</span> / 1000m</div>
+</div>
+
+<div id="win-screen">
+    <h1>CHEGOU EM 1º LUGAR!</h1>
+    <p>Você é o mestre da velocidade!</p>
+    <button onclick="location.reload()">CORRER DE NOVO</button>
+</div>
+
+<div id="controls">
+    <div id="joy-area"><div id="stick"></div></div>
+    <div id="btn-gas">ULTRA<br>GAS!</div>
+</div>
+
+<script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+
+    // CENA DE DIA
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB); // Céu azul claro
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // LUZ DO SOL
+    const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+    sun.position.set(50, 100, 50);
+    scene.add(sun);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+    // PISTA
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(25, 3000), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+    road.rotation.x = -Math.PI / 2;
+    road.position.z = -1000;
+    scene.add(road);
+
+    const grass = new THREE.Mesh(new THREE.PlaneGeometry(1000, 3000), new THREE.MeshStandardMaterial({ color: 0x2ecc71 }));
+    grass.rotation.x = -Math.PI / 2;
+    grass.position.y = -0.1;
+    grass.position.z = -1000;
+    scene.add(grass);
+
+    // LINHA DE CHEGADA (Bem visível)
+    const finishLine = new THREE.Group();
+    const whiteBar = new THREE.Mesh(new THREE.PlaneGeometry(25, 4), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    whiteBar.rotation.x = -Math.PI / 2;
+    const blackChecks = new THREE.GridHelper(25, 10, 0x000000, 0x000000);
+    blackChecks.rotation.x = -Math.PI / 2;
+    finishLine.add(whiteBar, blackChecks);
+    finishLine.position.set(0, 0.1, -1000);
+    scene.add(finishLine);
+
+    // FUNÇÃO PARA CRIAR CARROS
+    function createCar(color) {
+        const carGroup = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 4), new THREE.MeshStandardMaterial({color}));
+        body.position.y = 0.5;
+        const top = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.8, 2), new THREE.MeshStandardMaterial({color: 0x111111}));
+        top.position.set(0, 1.2, -0.5);
+        carGroup.add(body, top);
+        return carGroup;
+    }
+
+    const playerCar = createCar(0x3498db);
+    scene.add(playerCar);
+
+    // CARROS OPONENTES
+    const opponents = [];
+    const carColors = [0xe74c3c, 0xf1c40f, 0x9b59b6, 0xff6b6b, 0x1abc9c];
+    for(let i=0; i<5; i++) {
+        const op = createCar(carColors[i]);
+        op.position.set((Math.random()-0.5)*18, 0, -50 - (i*30));
+        op.userData = { speed: 0.5 + Math.random()*0.5 };
+        opponents.push(op);
+        scene.add(op);
+    }
+
+    // CONTROLES
+    let joyX = 0, isGas = false, playerSpeed = 0, distance = 0, finished = false;
+    const stick = document.getElementById('stick');
+
+    document.getElementById('joy-area').addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        const rect = e.currentTarget.getBoundingClientRect();
+        joyX = (touch.clientX - (rect.left + rect.width/2)) / (rect.width/2);
+        stick.style.transform = `translateX(${Math.max(-30, Math.min(30, joyX*30))}px)`;
+    });
+    document.getElementById('joy-area').addEventListener('touchend', () => { joyX = 0; stick.style.transform = 'translateX(0)'; });
+    document.getElementById('btn-gas').addEventListener('touchstart', (e) => { e.preventDefault(); isGas = true; });
+    document.getElementById('btn-gas').addEventListener('touchend', () => isGas = false);
+
+    function animate() {
+        if(finished) return;
+        requestAnimationFrame(animate);
+
+        // ACELERAÇÃO ULTRA (Até 50 bilhões)
+        if(isGas) {
+            playerSpeed += 80000000; 
+            if(playerSpeed > 50000000000) playerSpeed = 50000000000;
+        } else {
+            playerSpeed *= 0.97;
+        }
+
+        // Movimento visual
+        const moveStep = playerSpeed / 100000000;
+        playerCar.position.z -= moveStep;
+        playerCar.position.x += joyX * moveStep * 0.5;
+        playerCar.position.x = Math.max(-11, Math.min(11, playerCar.position.x));
+
+        // IA Oponentes
+        opponents.forEach(op => {
+            op.position.z -= op.userData.speed;
+        });
+
+        // Distância e Rank
+        distance = Math.abs(playerCar.position.z);
+        let rank = 1;
+        opponents.forEach(op => { if(op.position.z < playerCar.position.z) rank++; });
+
+        document.getElementById('speed').innerText = playerSpeed.toLocaleString('pt-BR');
+        document.getElementById('dist').innerText = Math.floor(Math.min(1000, distance)) + "m";
+        document.getElementById('rank').innerText = rank;
+
+        // Linha de Chegada
+        if(distance >= 1000) {
+            finished = true;
+            document.getElementById('win-screen').style.display = 'block';
+        }
+
+        // Câmera
+        camera.position.set(playerCar.position.x, 5, playerCar.position.z + 15);
+        camera.lookAt(playerCar.position.x, 2, playerCar.position.z - 10);
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.onresize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+</script>
+</body>
+</html>

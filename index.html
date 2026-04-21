@@ -20,7 +20,8 @@
             --clr-pipa: #e056fd;
             --clr-online: #00d2d3;
             --clr-trabalho: #f1f2f6;
-            --clr-hero: #ffdd59; /* Cor para Homem Salvador/Vilão */
+            --clr-hero: #ffdd59;
+            --clr-carro: #ff5e57; /* Cor para o jogo de carro */
         }
 
         * {
@@ -34,7 +35,7 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 0% 0%, rgba(255, 221, 89, 0.1), transparent 40%),
+                radial-gradient(circle at 0% 0%, rgba(255, 94, 87, 0.1), transparent 40%),
                 radial-gradient(circle at 100% 100%, rgba(30, 144, 255, 0.1), transparent 40%);
             color: var(--text-main);
             min-height: 100vh;
@@ -56,10 +57,10 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 4px;
-            background: linear-gradient(to bottom, #fff, var(--clr-hero));
+            background: linear-gradient(to bottom, #fff, #94a3b8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 10px rgba(255, 221, 89, 0.3));
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
         }
 
         .game-grid {
@@ -67,7 +68,7 @@
             max-width: 450px;
             display: grid;
             gap: 12px;
-            padding-bottom: 30px;
+            padding-bottom: 40px;
         }
 
         .game-card {
@@ -113,7 +114,9 @@
             line-height: 1.2;
         }
 
-        /* Estilos de Cores */
+        /* Cores dos Ícones */
+        .card-carro .icon-box { background: rgba(255, 94, 87, 0.15); color: var(--clr-carro); border: 1px solid var(--clr-carro); }
+        .card-hero .icon-box { background: rgba(255, 221, 89, 0.15); color: var(--clr-hero); border: 1px solid var(--clr-hero); }
         .card-fm .icon-box { background: rgba(255, 71, 87, 0.15); color: var(--clr-fm); border: 1px solid var(--clr-fm); }
         .card-mn .icon-box { background: rgba(46, 213, 115, 0.15); color: var(--clr-mn); border: 1px solid var(--clr-mn); }
         .card-3d .icon-box { background: rgba(30, 144, 255, 0.15); color: var(--clr-3d); border: 1px solid var(--clr-3d); }
@@ -121,15 +124,14 @@
         .card-pipa .icon-box { background: rgba(224, 86, 253, 0.15); color: var(--clr-pipa); border: 1px solid var(--clr-pipa); }
         .card-online .icon-box { background: rgba(0, 210, 211, 0.15); color: var(--clr-online); border: 1px solid var(--clr-online); }
         .card-trabalho .icon-box { background: rgba(241, 242, 246, 0.1); color: var(--clr-trabalho); border: 1px solid var(--clr-trabalho); }
-        .card-hero .icon-box { background: rgba(255, 221, 89, 0.15); color: var(--clr-hero); border: 1px solid var(--clr-hero); }
 
         footer {
             margin-top: auto;
             padding: 20px 0;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: var(--text-dim);
-            letter-spacing: 2px;
             text-align: center;
+            opacity: 0.7;
         }
     </style>
 </head>
@@ -141,18 +143,26 @@
 
     <main class="game-grid">
         
+        <a href="jogodecarro.html" class="game-card card-carro">
+            <div class="icon-box">🚗</div>
+            <div class="info">
+                <h2>Corrida de Carros</h2>
+                <p>Pise fundo e chegue em primeiro.</p>
+            </div>
+        </a>
+
         <a href="homemsalvadorevilão.html" class="game-card card-hero">
             <div class="icon-box">🦸‍♂️</div>
             <div class="info">
-                <h2>Salvador ou Vilão?</h2>
-                <p>Escolha seu destino nesta jornada.</p>
+                <h2>Herói ou Vilão</h2>
+                <p>Suas escolhas definem seu destino.</p>
             </div>
         </a>
 
         <a href="jogo1-fm.html" class="game-card card-fm">
             <div class="icon-box">🎬</div>
             <div class="info">
-                <h2>Cine Master</h2>
+                <h2>Mestre do Cinema</h2>
                 <p>Cenas e decisões interativas.</p>
             </div>
         </a>
@@ -160,55 +170,55 @@
         <a href="jogo2-mn.html" class="game-card card-mn">
             <div class="icon-box">🧱</div>
             <div class="info">
-                <h2>Block World</h2>
-                <p>O mundo de blocos no seu celular.</p>
+                <h2>Mundo de Blocos</h2>
+                <p>Construa tudo o que imaginar.</p>
             </div>
         </a>
 
         <a href="jogo3-3d.html" class="game-card card-3d">
             <div class="icon-box">🏙️</div>
             <div class="info">
-                <h2>Urban 3D</h2>
-                <p>Simulador de exploração urbana.</p>
+                <h2>Cidade em 3D</h2>
+                <p>Explore as ruas da cidade.</p>
             </div>
         </a>
 
         <a href="jogo4-tr.html" class="game-card card-tr">
             <div class="icon-box">🔫</div>
             <div class="info">
-                <h2>Strike Force</h2>
-                <p>Combate tático e ação.</p>
+                <h2>Força de Ataque</h2>
+                <p>Mostre que você é bom de mira.</p>
             </div>
         </a>
 
         <a href="jogodepipa.html" class="game-card card-pipa">
             <div class="icon-box">🪁</div>
             <div class="info">
-                <h2>Kite Pro</h2>
-                <p>O melhor festival de pipas.</p>
+                <h2>Festival de Pipas</h2>
+                <p>Corte as outras pipas do céu.</p>
             </div>
         </a>
 
         <a href="jogo5-online.html" class="game-card card-online">
             <div class="icon-box">🌐</div>
             <div class="info">
-                <h2>Mundo Online</h2>
-                <p>Conecte-se e jogue agora.</p>
+                <h2>Mundo em Rede</h2>
+                <p>Jogue online com amigos.</p>
             </div>
         </a>
 
         <a href="jogo7-trabalhodebon.html" class="game-card card-trabalho">
             <div class="icon-box">💼</div>
             <div class="info">
-                <h2>Projeto Bon</h2>
-                <p>Missões e objetivos especiais.</p>
+                <h2>Missão Especial</h2>
+                <p>Complete as tarefas do Projeto Bon.</p>
             </div>
         </a>
 
     </main>
 
     <footer>
-        &copy; DAVI GAMES - 8 PROJETOS ATIVOS
+        DAVI GAMES © 2024 - 9 JOGOS DISPONÍVEIS
     </footer>
 
 </body>
