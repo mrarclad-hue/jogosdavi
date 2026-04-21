@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Elite Airborne Strike - Online Multiplayer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1e272e; font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        canvas { display: block; }
+        
+        #ui { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 10; }
+        .stat { 
+            background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 10px;
+            font-size: 18px; font-weight: bold; margin-bottom: 8px; border-left: 5px solid #f1c40f;
+        }
+
+        #lvl-display { position: absolute; top: 20px; right: 20px; color: #f1c40f; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; }
+
+        #controls-wrapper { 
+            position: absolute; bottom: 30px; width: 100%; 
+            display: flex; justify-content: space-between; align-items: flex-end;
+            padding: 0 40px; box-sizing: border-box; pointer-events: none; 
+        }
+        
+        .control-group { display: flex; gap: 25px; pointer-events: auto; }
+
+        #joystick-container { 
+            width: 130px; height: 130px; background: rgba(255,255,255,0.1); 
+            border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; position: relative; pointer-events: auto;
+        }
+        #joystick-knob { 
+            position: absolute; top: 40px; left: 40px; width: 50px; height: 50px; 
+            background: #fff; border-radius: 50%; pointer-events: none;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .action-btn {
+            width: 90px; height: 90px; border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; color: white; 
+            font-weight: bold; user-select: none; pointer-events: auto;
+            box-shadow: 0 8px #000; transition: transform 0.05s;
+            -webkit-user-select: none;
+        }
+        .action-btn:active { transform: translateY(4px); box-shadow: 0 4px #000; }
+        #btn-jump { background: #27ae60; border: 4px solid #1e8449; }
+        #btn-shoot { background: #e74c3c; border: 4px solid #c0392b; }
+        
+        /* Menu de Conexão */
+        #connection-menu {
+            position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.9);
+            z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;
+        }
+        .menu-btn {
+            padding: 20px 40px; margin: 10px; font-size: 20px; cursor: pointer;
+            background: #f1c40f; border: none; border-radius: 10px; font-weight: bold;
+        }
+
+        #msg-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95); color: white; padding: 40px; border-radius: 20px;
+            text-align: center; display: none; border: 2px solid #f1c40f; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<div id="connection-menu">
+    <h1>ELITE AIRBORNE ONLINE</h1>
+    <p>Escolha seu perfil para conectar:</p>
+    <button class="menu-btn" onclick="startMultiplayer('JOGADOR2DUO2026', 'AQUISERABOM2026')">SOU JOGADOR 1</button>
+    <button class="menu-btn" onclick="startMultiplayer('AQUISERABOM2026', 'JOGADOR2DUO2026')">SOU JOGADOR 2</button>
+    <p id="status">Aguardando escolha...</p>
+</div>
+
+<div id="ui">
+    <div class="stat">KILLS: <span id="score">0</span> / 20</div>
+    <div class="stat">HP: <span id="health">100</span>%</div>
+</div>
+<div id="lvl-display">NÍVEL 1</div>
+
+<div id="msg-overlay">
+    <h1 id="msg-title">MISSÃO COMPLETA</h1>
+    <p id="msg-body">Extração disponível no fim do mapa!</p>
+</div>
+
+<div id="controls-wrapper">
+    <div id="joystick-container"><div id="joystick-knob"></div></div>
+    <div class="control-group">
+        <div id="btn-jump" class="action-btn">PULAR</div>
+        <div id="btn-shoot" class="action-btn">FOGO</div>
+    </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const healthEl = document.getElementById('health');
+const lvlEl = document.getElementById('lvl-display');
+const overlay = document.getElementById('msg-overlay');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// --- Multiplayer Variaveis ---
+let peer, conn;
+let myID = "";
+let otherID = "";
+let isHost = false;
+
+const gravity = 0.6;
+let score = 0;
+let currentLevel = 1;
+let gameActive = false; // Começa pausado até conectar
+let frameCount = 0;
+const worldWidth = 5000;
+
+const camera = { x: 0 };
+const input = { joystickX: 0, jump: false, shoot: false };
+
+// Player Local
+const player = {
+    x: 200, y: 100, w: 40, h: 60,
+    vx: 0, vy: 0, speed: 7, jumpPower: -16,
+    health: 100, grounded: false, facing: 1,
+    color: '#3498db', animPhase: 0
+};
+
+// Player Remoto (Amigo)
+const remotePlayer = {
+    x: 200, y: 100, facing: 1, animPhase: 0, color: '#9b59b6', active: false
+};
+
+const enemyColors = ['#c0392b', '#8e44ad', '#d35400', '#27ae60', '#2c3e50', '#f39c12'];
+
+const maps = {
+    1: { sky: '#2980b9', platforms: [
+        {x: 0, y: canvas.height-80, w: 5000, h: 80},
+        {x: 500, y: canvas.height-250, w: 400, h: 40},
+        {x: 1200, y: canvas.height-400, w: 400, h: 40},
+        {x: 2200, y: canvas.height-300, w: 800, h: 40}
+    ]},
+    2: { sky: '#2c3e50', platforms: [
+        {x: 0, y: canvas.height-80, w: 1500, h: 80},
+        {x: 1800, y: canvas.height-80, w: 3200, h: 80},
+        {x: 600, y: canvas.height-250, w: 500, h: 40}
+    ]},
+    3: { sky: '#130f40', platforms: [
+        {x: 0, y: canvas.height-80, w: 5000, h: 80},
+        {x: 1000, y: canvas.height-300, w: 300, h: 30},
+        {x: 1500, y: canvas.height-500, w: 400, h: 30}
+    ]},
+    4: { sky: '#b33939', platforms: [
+        {x: 0, y: canvas.height-80, w: 5000, h: 80},
+        {x: 1500, y: canvas.height-400, w: 2000, h: 40}
+    ] }
+};
+
+let currentMap = maps[1];
+const bullets = [];
+const enemyBullets = [];
+const enemies = [];
+const airplane = { x: -600, y: 100, speed: 4, propAngle: 0 };
+const exitDoor = { x: 4850, y: 0, w: 80, h: 120, active: false };
+
+// --- Lógica de Conexão PeerJS ---
+function startMultiplayer(me, other) {
+    myID = me;
+    otherID = other;
+    document.getElementById('status').innerText = "Iniciando rede...";
+    
+    peer = new Peer(myID);
+
+    peer.on('open', (id) => {
+        document.getElementById('status').innerText = "Meu ID: " + id + ". Tentando conectar ao amigo...";
+        // Tenta conectar ao outro automaticamente
+        setTimeout(() => connectToFriend(), 2000);
+    });
+
+    peer.on('connection', (c) => {
+        conn = c;
+        setupConnection();
+    });
+
+    peer.on('error', (err) => {
+        console.error(err);
+        document.getElementById('status').innerText = "Erro. O amigo está online?";
+    });
+}
+
+function connectToFriend() {
+    if (!conn) {
+        const c = peer.connect(otherID);
+        c.on('open', () => {
+            conn = c;
+            setupConnection();
+        });
+    }
+}
+
+function setupConnection() {
+    document.getElementById('connection-menu').style.display = 'none';
+    gameActive = true;
+    remotePlayer.active = true;
+    
+    // O Jogador 1 (JOGADOR2DUO2026) será o Host da lógica dos inimigos
+    if (myID === 'JOGADOR2DUO2026') isHost = true;
+
+    conn.on('data', (data) => {
+        if (data.type === 'pos') {
+            remotePlayer.x = data.x;
+            remotePlayer.y = data.y;
+            remotePlayer.facing = data.facing;
+            remotePlayer.animPhase = data.animPhase;
+        } else if (data.type === 'shoot') {
+            bullets.push({ x: data.x, y: data.y, vx: data.vx });
+        } else if (data.type === 'syncEnemies' && !isHost) {
+            // Cliente recebe sincronização de inimigos do Host
+            enemies.length = 0;
+            data.list.forEach(e => enemies.push(e));
+        }
+    });
+
+    update();
+}
+
+// --- Controles ---
+function handleTouch(e) {
+    e.preventDefault();
+    const touches = e.touches;
+    input.jump = false;
+    input.shoot = false;
+    input.joystickX = 0;
+
+    for (let i = 0; i < touches.length; i++) {
+        const t = touches[i];
+        const target = t.target;
+
+        if (target.id === 'joystick-container' || target.id === 'joystick-knob') {
+            const rect = document.getElementById('joystick-container').getBoundingClientRect();
+            let dx = t.clientX - (rect.left + rect.width / 2);
+            input.joystickX = Math.max(-1, Math.min(1, dx / 45));
+            document.getElementById('joystick-knob').style.transform = `translateX(${input.joystickX * 45}px)`;
+        }
+        if (target.id === 'btn-jump') input.jump = true;
+        if (target.id === 'btn-shoot') input.shoot = true;
+    }
+}
+
+document.addEventListener('touchstart', handleTouch);
+document.addEventListener('touchmove', handleTouch);
+document.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0) {
+        input.joystickX = 0;
+        document.getElementById('joystick-knob').style.transform = `translate(0,0)`;
+    }
+    handleTouch(e);
+});
+
+// --- Funções de Desenho ---
+function drawAdvancedAirplane(ctx, x, y) {
+    airplane.propAngle += 0.8;
+    ctx.save();
+    ctx.fillStyle = '#4b6584';
+    ctx.beginPath();
+    ctx.moveTo(x + 20, y + 20); ctx.lineTo(x + 80, y - 30); ctx.lineTo(x + 120, y + 20);
+    ctx.fill();
+    ctx.fillStyle = '#778ca3'; ctx.beginPath(); ctx.roundRect(x + 50, y, 300, 70, 20); ctx.fill();
+    ctx.fillStyle = '#4b6584'; ctx.beginPath(); ctx.arc(x + 350, y + 35, 35, -Math.PI/2, Math.PI/2); ctx.fill();
+    const motorX = x + 375; const motorY = y + 35;
+    ctx.translate(motorX + 15, motorY); ctx.rotate(airplane.propAngle);
+    ctx.fillStyle = '#222'; ctx.fillRect(-2, -40, 4, 80);
+    ctx.restore();
+}
+
+function drawSoldier(ctx, x, y, color, facing, isMoving, phase, isEnemy=false, isFalling=false) {
+    ctx.save();
+    if (isFalling) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x+20, y); ctx.lineTo(x-10, y-40); ctx.stroke();
+        ctx.fillStyle = '#eb4d4b'; ctx.beginPath(); ctx.arc(x+20, y-45, 35, Math.PI, 0); ctx.fill();
+    }
+    ctx.translate(x + 20, y + 30);
+    ctx.scale(facing, 1);
+    const limb = isMoving ? Math.sin(phase) * 15 : 0;
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-limb, 28); ctx.stroke(); 
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(limb, 28); ctx.stroke();  
+    ctx.fillStyle = color; ctx.fillRect(-12, -20, 24, 35);
+    ctx.fillStyle = '#ffe0bd'; ctx.fillRect(-10, -35, 20, 20);
+    ctx.restore();
+}
+
+// --- Loop Principal ---
+function update() {
+    if (!gameActive) return;
+    frameCount++;
+
+    // Movimento Player Local
+    player.vx = input.joystickX * player.speed;
+    if (Math.abs(input.joystickX) > 0.1) {
+        player.facing = input.joystickX > 0 ? 1 : -1;
+        player.animPhase += 0.2;
+    }
+    if (input.jump && player.grounded) { player.vy = player.jumpPower; player.grounded = false; }
+    
+    if (input.shoot && frameCount % 12 === 0) {
+        const bx = player.x + (player.facing === 1 ? 40 : 0);
+        const bvx = 20 * player.facing;
+        bullets.push({ x: bx, y: player.y + 25, vx: bvx });
+        // Enviar tiro para o amigo
+        conn.send({ type: 'shoot', x: bx, y: player.y + 25, vx: bvx });
+    }
+
+    player.vy += gravity;
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // Colisões do mapa
+    player.grounded = false;
+    currentMap.platforms.forEach(p => {
+        if (player.x + 10 < p.x + p.w && player.x + 30 > p.x) {
+            if (player.vy >= 0 && player.y + player.h >= p.y && player.y + player.h <= p.y + p.h + player.vy) {
+                player.y = p.y - player.h; player.vy = 0; player.grounded = true;
+            }
+        }
+    });
+
+    // Enviar Posição ao amigo (60 vezes por segundo)
+    conn.send({
+        type: 'pos',
+        x: player.x,
+        y: player.y,
+        facing: player.facing,
+        animPhase: player.animPhase
+    });
+
+    // Câmera segue o player local
+    camera.x = player.x - canvas.width / 3;
+    if (camera.x < 0) camera.x = 0;
+
+    // Lógica de Inimigos (Apenas o Host calcula)
+    if (isHost) {
+        airplane.x += airplane.speed;
+        if (airplane.x > worldWidth + 600) airplane.x = -600;
+        if (score < 20 && frameCount % 150 === 0 && enemies.length < 8) {
+            enemies.push({ 
+                x: airplane.x + 60, y: airplane.y + 40, vy: 1.5, state: 'falling', 
+                facing: -1, animPhase: 0, color: enemyColors[Math.floor(Math.random()*6)],
+                grounded: false
+            });
+        }
+        
+        enemies.forEach((en, i) => {
+            if (en.state !== 'falling') en.vy = (en.vy || 0) + gravity;
+            en.y += en.vy;
+            currentMap.platforms.forEach(p => {
+                if (en.x + 10 < p.x + p.w && en.x + 30 > p.x) {
+                    if (en.vy >= 0 && en.y + 60 >= p.y && en.y + 60 <= p.y + p.h + en.vy) {
+                        en.y = p.y - 60; en.vy = 0; en.state = 'hunting';
+                    }
+                }
+            });
+            if (en.state === 'hunting') {
+                // Persegue o player mais próximo
+                let target = (Math.abs(player.x - en.x) < Math.abs(remotePlayer.x - en.x)) ? player : remotePlayer;
+                en.facing = target.x > en.x ? 1 : -1;
+                en.x += en.facing * 2.5;
+            }
+        });
+
+        // Sincroniza inimigos com o cliente a cada 2 frames para economizar banda
+        if (frameCount % 2 === 0) {
+            conn.send({ type: 'syncEnemies', list: enemies });
+        }
+    }
+
+    // Balas vs Inimigos
+    bullets.forEach((b, bi) => {
+        b.x += b.vx;
+        enemies.forEach((en, ei) => {
+            if (b.x > en.x && b.x < en.x + 40 && b.y > en.y && b.y < en.y + 60) {
+                if (isHost) enemies.splice(ei, 1); // Apenas o Host deleta oficialmente
+                bullets.splice(bi, 1);
+                score++; scoreEl.innerText = score;
+            }
+        });
+    });
+
+    if (player.health <= 0 || player.y > canvas.height + 100) {
+        player.x = 200; player.y = 100; player.health = 100;
+        healthEl.innerText = 100;
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = currentMap.sky;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.translate(-camera.x, 0);
+
+    drawAdvancedAirplane(ctx, airplane.x, airplane.y);
+
+    currentMap.platforms.forEach(p => {
+        ctx.fillStyle = '#2d3436'; ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = '#636e72'; ctx.fillRect(p.x, p.y, p.w, 10);
+    });
+
+    // Desenha Você
+    drawSoldier(ctx, player.x, player.y, player.color, player.facing, Math.abs(player.vx) > 0.5, player.animPhase);
+    
+    // Desenha o Amigo
+    if (remotePlayer.active) {
+        drawSoldier(ctx, remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, true, remotePlayer.animPhase);
+    }
+
+    // Desenha Inimigos
+    enemies.forEach(en => drawSoldier(ctx, en.x, en.y, en.color, en.facing, en.state === 'hunting', en.animPhase, true, en.state === 'falling'));
+
+    ctx.fillStyle = '#f1c40f'; bullets.forEach(b => ctx.fillRect(b.x, b.y, 18, 6));
+}
+
+</script>
+</body>
+</html>
