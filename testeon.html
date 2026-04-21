@@ -3,115 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elite Airborne - Pro Edition</title>
+    <title>Elite Airborne - Ultimate Combat</title>
     <style>
-        * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            touch-action: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #1e272e; 
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; overflow: hidden; background: #1e272e; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
         canvas { display: block; background: #000; }
-        
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
 
-        /* Botão de Rotação com Feedback */
-        #rotate-ui-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 55px;
-            height: 55px;
-            background: #8e44ad;
-            border: 3px solid #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1100;
-            color: white;
-            font-size: 24px;
-            pointer-events: auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: transform 0.1s, background 0.1s;
-        }
-        #rotate-ui-btn:active {
-            transform: scale(0.9) rotate(90deg);
-            background: #9b59b6;
-        }
+        #rotate-ui-btn { position: absolute; top: 15px; right: 15px; width: 55px; height: 55px; background: #8e44ad; border: 3px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 1100; color: white; font-size: 24px; pointer-events: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
-        #menu-container {
-            position: absolute; width: 100%; height: 100%; background: #1e272e;
-            z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+        #menu-container, #end-screen { position: absolute; width: 100%; height: 100%; background: rgba(30, 39, 46, 0.95); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        #end-screen { display: none; z-index: 1200; }
 
-        .panel { 
-            background: #2f3640; padding: 15px; border-radius: 15px; 
-            border: 2px solid #3498db; text-align: center; color: white; 
-            margin-bottom: 10px; width: 85%; max-width: 350px; 
-        }
-
-        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; }
+        .panel { background: #2f3640; padding: 15px; border-radius: 15px; border: 2px solid #3498db; text-align: center; margin-bottom: 10px; width: 85%; max-width: 350px; }
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; cursor: pointer; }
         .btn-p1 { background: #3498db; width: 45%; }
         .btn-p2 { background: #e67e22; width: 45%; }
         .btn-map { background: #7f8c8d; flex: 1; margin: 2px; font-size: 10px; }
         .btn-map.selected { background: #27ae60; border: 2px solid #fff; }
 
-        /* Controles - SEPARAÇÃO ESQUERDA / DIREITA GARANTIDA */
-        #controls { 
-            position: absolute; 
-            bottom: 30px; 
-            width: 100%; 
-            display: none; 
-            justify-content: space-between; 
-            padding: 0 40px; 
-            box-sizing: border-box; 
-            align-items: flex-end;
-        }
-        
-        .control-btn { 
-            width: 85px; height: 85px; border-radius: 50%; 
-            background: rgba(255,255,255,0.2); color: white; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; border: 3px solid rgba(255,255,255,0.4);
-            margin-bottom: 10px;
-        }
-
-        #joystick { 
-            width: 130px; height: 130px; 
-            border: 4px solid rgba(255,255,255,0.3); 
-            border-radius: 50%; position: relative; 
-            background: rgba(255,255,255,0.1);
-        }
-        #knob { 
-            width: 55px; height: 55px; background: #fff; 
-            border-radius: 50%; position: absolute; 
-            top: 37.5px; left: 37.5px; 
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        }
-
-        #btn-group-right { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px; 
-            align-items: center; 
-        }
+        #controls { position: absolute; bottom: 30px; width: 100%; display: none; justify-content: space-between; padding: 0 40px; box-sizing: border-box; align-items: flex-end; }
+        .control-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid rgba(255,255,255,0.4); margin-bottom: 10px; }
+        #joystick { width: 130px; height: 130px; border: 4px solid rgba(255,255,255,0.3); border-radius: 50%; position: relative; background: rgba(255,255,255,0.1); }
+        #knob { width: 55px; height: 55px; background: #fff; border-radius: 50%; position: absolute; top: 37.5px; left: 37.5px; }
 
         #stats { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; font-size: 14px; border: 1px solid #3498db; }
+        #grenade-indicator { color: #f1c40f; font-weight: bold; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -119,33 +37,37 @@
 <div id="rotate-ui-btn" class="interactive">🔄</div>
 
 <div id="menu-container">
-    <h1 style="color: white; margin-bottom: 20px;">ELITE AIRBORNE</h1>
-    
+    <h1>ELITE AIRBORNE</h1>
     <div class="panel">
-        <h4 style="margin: 5px;">SELECIONAR MAPA</h4>
+        <h4>MAPA</h4>
         <div style="display: flex;">
             <div id="map-0" class="btn btn-map selected">URBANO</div>
             <div id="map-1" class="btn btn-map">DESERTO</div>
             <div id="map-2" class="btn btn-map">FLORESTA</div>
         </div>
     </div>
-
     <div class="panel">
-        <h4 style="margin: 5px;">MULTIPLAYER</h4>
         <div style="display: flex; justify-content: space-between;">
             <div id="p1-btn" class="btn btn-p1">CRIAR</div>
             <div id="p2-btn" class="btn btn-p2">ENTRAR</div>
         </div>
     </div>
-    <div id="status-display" style="color: #bdc3c7; font-size: 13px;">Gire a tela para modo paisagem para melhor visão</div>
+</div>
+
+<div id="end-screen">
+    <h1 id="end-msg" style="font-size: 48px;">VITÓRIA!</h1>
+    <button class="btn btn-p1" onclick="location.reload()">JOGAR NOVAMENTE</button>
 </div>
 
 <div id="ui-layer">
-    <div id="stats">MOEDAS: $<span id="coin-count">0</span></div>
+    <div id="stats">
+        KILLS: <span id="kill-count">0</span>/4 | 
+        GREN: <span id="grenade-count">0</span>
+    </div>
     <div id="controls" class="interactive">
         <div id="joystick"><div id="knob"></div></div>
-        
-        <div id="btn-group-right">
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div id="btn-grenade" class="control-btn" style="background: rgba(241, 196, 15, 0.4); display: none;">GREN</div>
             <div id="btn-jump" class="control-btn" style="background: rgba(46, 204, 113, 0.4);">PULAR</div>
             <div id="btn-shoot" class="control-btn" style="background: rgba(231, 76, 60, 0.4);">FOGO</div>
         </div>
@@ -157,67 +79,54 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <script>
+// --- ÁUDIO ENGINE (SINTETIZADO) ---
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const audio = new AudioCtx();
+function playSound(type) {
+    if(audio.state === 'suspended') audio.resume();
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.connect(gain); gain.connect(audio.destination);
+    if(type==='shoot'){ osc.type='square'; osc.frequency.setValueAtTime(150, audio.currentTime); osc.frequency.exponentialRampToValueAtTime(0.01, audio.currentTime+0.1); gain.gain.setValueAtTime(0.1, audio.currentTime); }
+    if(type==='jump'){ osc.type='sine'; osc.frequency.setValueAtTime(200, audio.currentTime); osc.frequency.exponentialRampToValueAtTime(400, audio.currentTime+0.1); gain.gain.setValueAtTime(0.1, audio.currentTime); }
+    if(type==='exp'){ osc.type='sawtooth'; osc.frequency.setValueAtTime(100, audio.currentTime); osc.frequency.exponentialRampToValueAtTime(0.01, audio.currentTime+0.5); gain.gain.setValueAtTime(0.3, audio.currentTime); }
+    if(type==='pickup'){ osc.type='triangle'; osc.frequency.setValueAtTime(440, audio.currentTime); osc.frequency.exponentialRampToValueAtTime(880, audio.currentTime+0.1); gain.gain.setValueAtTime(0.1, audio.currentTime); }
+    osc.start(); osc.stop(audio.currentTime + 0.5);
+}
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
-const V_WIDTH = 1280; 
-const V_HEIGHT = 720; 
-
+const V_WIDTH = 1280, V_HEIGHT = 720;
 function resize() {
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-    const scale = Math.min(screenW / V_WIDTH, screenH / V_HEIGHT);
-    canvas.width = V_WIDTH * scale;
-    canvas.height = V_HEIGHT * scale;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    const scale = Math.min(window.innerWidth/V_WIDTH, window.innerHeight/V_HEIGHT);
+    canvas.width = V_WIDTH*scale; canvas.height = V_HEIGHT*scale;
+    ctx.setTransform(scale,0,0,scale,0,0);
 }
-window.addEventListener('resize', resize);
-resize();
+window.onresize = resize; resize();
 
-// LÓGICA DE ROTAÇÃO E FULLSCREEN
-document.getElementById('rotate-ui-btn').addEventListener('touchstart', async (e) => {
-    e.preventDefault();
-    if (screen.orientation && screen.orientation.lock) {
-        if (screen.orientation.type.includes('portrait')) {
-            await document.documentElement.requestFullscreen().catch(() => {});
-            await screen.orientation.lock('landscape').catch(() => {});
-        } else {
-            if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
-            await screen.orientation.lock('portrait').catch(() => {});
-        }
-    }
-});
-
-const ID_P1 = "JOGADOR2DUO2026";
-const ID_P2 = "AQUISERABOM2026";
+// REDE E ESTADO
+const ID_P1 = "JOGADOR2DUO2026", ID_P2 = "AQUISERABOM2026";
 let peer, conn, isHost = false, gameActive = false;
-
-const player = { x: 200, y: 0, vx: 0, vy: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false, coins: 0 };
-const remotePlayer = { x: 600, y: 0, targetX: 600, targetY: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
-let bullets = [];
-let selectedMapIndex = 0;
+const player = { x: 200, y: 0, vx: 0, vy: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false, kills: 0, grenades: 0 };
+const remotePlayer = { x: 800, y: 0, targetX: 800, targetY: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false, kills: 0 };
+let bullets = [], grenades = [], mapItems = [], plane = { x: -500, active: false }, bombs = [];
 
 const maps = [
     { bg: '#2c3e50', plat: '#7f8c8d', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 400, y: 450, w: 400, h: 30}, {x: 1000, y: 350, w: 400, h: 30}] },
     { bg: '#d35400', plat: '#e67e22', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 200, y: 480, w: 300, h: 30}, {x: 700, y: 380, w: 300, h: 30}] },
     { bg: '#1b1464', plat: '#0652DD', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 300, y: 420, w: 500, h: 30}, {x: 900, y: 300, w: 300, h: 30}] }
 ];
+let selectedMapIndex = 0;
 
-const input = { x: 0, jump: false, shoot: false };
-
+// INPUT
+const input = { x: 0, jump: false, shoot: false, throw: false };
 function handleTouch(e) {
     e.preventDefault();
-    const touches = e.touches;
-    let moveX = 0;
-    let anyJoystick = false;
-    input.jump = false;
-    input.shoot = false;
-
-    for (let t of touches) {
+    let moveX = 0, anyJoy = false;
+    input.jump = input.shoot = input.throw = false;
+    for (let t of e.touches) {
         const el = document.elementFromPoint(t.clientX, t.clientY);
         if (!el) continue;
-
-        // Menu
         if (!gameActive) {
             if (el.id === 'p1-btn') startPeer(ID_P1, true);
             if (el.id === 'p2-btn') startPeer(ID_P2, false);
@@ -226,149 +135,180 @@ function handleTouch(e) {
                 document.querySelectorAll('.btn-map').forEach((b, i) => b.classList.toggle('selected', i === selectedMapIndex));
             }
         }
-
-        // Joystick Corrigido (Movimento Contínuo)
         if (el.id === 'joystick' || el.id === 'knob') {
             const rect = document.getElementById('joystick').getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const dist = t.clientX - centerX;
-            moveX = dist < 0 ? -1 : 1;
-            
-            // Limita o visual do knob mas mantém o movimento
-            const visualDist = Math.max(-35, Math.min(35, dist));
-            document.getElementById('knob').style.transform = `translateX(${visualDist}px)`;
-            anyJoystick = true;
+            moveX = (t.clientX - (rect.left + rect.width/2)) < 0 ? -1 : 1;
+            document.getElementById('knob').style.transform = `translateX(${moveX * 35}px)`;
+            anyJoy = true;
         }
-
         if (el.id === 'btn-jump') input.jump = true;
         if (el.id === 'btn-shoot') input.shoot = true;
+        if (el.id === 'btn-grenade') input.throw = true;
     }
-    input.x = moveX;
-    if (!anyJoystick) document.getElementById('knob').style.transform = `translateX(0)`;
+    input.x = moveX; if (!anyJoy) document.getElementById('knob').style.transform = `translateX(0)`;
 }
-
 document.addEventListener('touchstart', handleTouch, {passive: false});
 document.addEventListener('touchmove', handleTouch, {passive: false});
-document.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0) { input.x = 0; document.getElementById('knob').style.transform = `translateX(0)`; }
-    handleTouch(e);
-}, {passive: false});
+document.addEventListener('touchend', handleTouch, {passive: false});
 
 function startPeer(id, host) {
-    if (peer) return;
-    isHost = host;
-    peer = new Peer(id);
-    document.getElementById('status-display').innerText = "Iniciando rádio...";
-    peer.on('open', () => {
-        document.getElementById('status-display').innerText = host ? "Sinal aberto. Aguardando oponente..." : "Buscando sinal...";
-        if (!host) {
-            const c = peer.connect(ID_P1);
-            c.on('open', () => { conn = c; setupNetwork(); });
-        }
-    });
+    isHost = host; peer = new Peer(id);
+    peer.on('open', () => { if(!host) { conn = peer.connect(ID_P1); conn.on('open', setupNetwork); } });
     peer.on('connection', (c) => { conn = c; conn.on('open', () => { conn.send({type:'map', i:selectedMapIndex}); setupNetwork(); })});
 }
 
 function setupNetwork() {
     conn.on('data', d => {
-        if (d.type==='sync') { remotePlayer.targetX=d.x; remotePlayer.targetY=d.y; remotePlayer.facing=d.f; remotePlayer.anim=d.a; remotePlayer.hp=d.h; remotePlayer.active=true; }
-        if (d.type==='shot') bullets.push({ x:d.x, y:d.y, vx:d.v, owner:'remote' });
+        if (d.type==='sync') { Object.assign(remotePlayer, {targetX:d.x, targetY:d.y, facing:d.f, anim:d.a, hp:d.h, active:true, kills:d.k}); }
+        if (d.type==='shot') { bullets.push({x:d.x, y:d.y, vx:d.v, owner:'remote'}); playSound('shoot'); }
         if (d.type==='map') selectedMapIndex = d.i;
+        if (d.type==='gren') grenades.push({x:d.x, y:d.y, vx:d.v, vy:-10, timer:120, owner:'remote'});
+        if (d.type==='bomb') bombs.push({x:d.x, y:0, vy:8});
     });
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('controls').style.display = 'flex';
-    gameActive = true;
-    gameLoop();
+    gameActive = true; spawnGrenade(); gameLoop();
+}
+
+function spawnGrenade() {
+    if(isHost) {
+        mapItems.push({x: Math.random()*3000, y: 580, type:'grenade'});
+    }
+    setTimeout(spawnGrenade, 10000);
 }
 
 function gameLoop() {
     if (!gameActive) return;
 
+    // Movimento e Gravidade
     player.vx = input.x * 8;
-    if (input.jump && player.grounded) { player.vy = -18; player.grounded = false; }
-    player.vy += 0.8;
-    player.x += player.vx;
-    player.y += player.vy;
-
-    // Impedir saída do mapa
-    if (player.x < 0) player.x = 0;
-    if (player.x > 4000 - player.w) player.x = 4000 - player.w;
+    if (input.jump && player.grounded) { player.vy = -18; player.grounded = false; playSound('jump'); }
+    player.vy += 0.8; player.x += player.vx; player.y += player.vy;
+    if (player.x < 0) player.x = 0; if (player.x > 3950) player.x = 3950;
 
     player.grounded = false;
     maps[selectedMapIndex].rects.forEach(p => {
-        if (player.x + player.w > p.x && player.x < p.x + p.w) {
-            if (player.vy >= 0 && player.y + player.h <= p.y + 10 && player.y + player.h + player.vy >= p.y) {
-                player.y = p.y - player.h; player.vy = 0; player.grounded = true;
-            }
+        if (player.x + player.w > p.x && player.x < p.x + p.w && player.vy >= 0 && player.y + player.h <= p.y + 10 && player.y + player.h + player.vy >= p.y) {
+            player.y = p.y - player.h; player.vy = 0; player.grounded = true;
         }
     });
 
-    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.25;
-    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.25;
+    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.2;
+    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.2;
 
+    // Tiros e Granadas
     if (input.shoot && Date.now() % 200 < 30) {
-        const bvx = player.facing * 20;
         const bx = player.x + (player.facing === 1 ? player.w : 0);
-        bullets.push({ x: bx, y: player.y + 30, vx: bvx, owner: 'me' });
-        conn.send({ type: 'shot', x: bx, y: player.y + 30, v: bvx });
+        bullets.push({ x: bx, y: player.y + 30, vx: player.facing * 20, owner: 'me' });
+        conn.send({ type: 'shot', x: bx, y: player.y + 30, v: player.facing * 20 });
+        playSound('shoot');
+    }
+    if (input.throw && player.grenades > 0) {
+        grenades.push({ x: player.x, y: player.y, vx: player.facing * 12, vy: -10, timer: 120, owner: 'me' });
+        conn.send({ type: 'gren', x: player.x, y: player.y, v: player.facing * 12 });
+        player.grenades--;
+        document.getElementById('grenade-count').innerText = player.grenades;
+        if(player.grenades <= 0) document.getElementById('btn-grenade').style.display = 'none';
     }
 
-    for(let i=bullets.length-1; i>=0; i--){
-        let b = bullets[i]; b.x += b.vx;
-        if (b.owner==='remote' && b.x > player.x && b.x < player.x + player.w && b.y > player.y && b.y < player.y + player.h) {
-            player.hp -= 10; bullets.splice(i, 1);
-            if (player.hp <= 0) { player.hp = 100; player.x = isHost ? 200 : 1500; player.y = 0; }
-        } else if (b.x < 0 || b.x > 4000) bullets.splice(i, 1);
+    // Itens no mapa
+    mapItems.forEach((item, i) => {
+        if (player.x < item.x + 30 && player.x + player.w > item.x && player.y < item.y + 30 && player.y + player.h > item.y) {
+            player.grenades++; playSound('pickup');
+            document.getElementById('grenade-count').innerText = player.grenades;
+            document.getElementById('btn-grenade').style.display = 'flex';
+            mapItems.splice(i, 1);
+        }
+    });
+
+    // Processar Explosivos
+    [...grenades, ...bombs].forEach((g, i) => {
+        g.x += (g.vx || 0); g.y += (g.vy || 8);
+        if(g.timer) g.timer--;
+        if(g.timer === 0 || g.y > 600) {
+            playSound('exp');
+            const dist = Math.hypot(player.x - g.x, player.y - g.y);
+            if(dist < 150) player.hp -= 40;
+            if(g.timer === 0) grenades.splice(grenades.indexOf(g), 1);
+            else bombs.splice(bombs.indexOf(g), 1);
+        }
+    });
+
+    // Avião Aleatório
+    if(isHost && !plane.active && Math.random() < 0.005) { plane.x = -500; plane.active = true; }
+    if(plane.active) {
+        plane.x += 10;
+        if(Math.random() < 0.05) { 
+            bombs.push({x: plane.x, y: 50, vy: 8});
+            conn.send({type:'bomb', x: plane.x});
+        }
+        if(plane.x > 4000) plane.active = false;
     }
+
+    // Check Morte e Vitória
+    if (player.hp <= 0) { 
+        player.hp = 100; player.x = Math.random()*1000; player.y = 0; 
+        remotePlayer.kills++;
+    }
+    if(remotePlayer.kills >= 4 || player.kills >= 4) {
+        gameActive = false;
+        document.getElementById('end-screen').style.display = 'flex';
+        document.getElementById('end-msg').innerText = player.kills >= 4 ? "VITÓRIA!" : "DERROTA!";
+    }
+
+    // Balas
+    bullets.forEach((b, i) => {
+        b.x += b.vx;
+        if (b.owner==='remote' && b.x > player.x && b.x < player.x+player.w && b.y > player.y && b.y < player.y+player.h) {
+            player.hp -= 10; bullets.splice(i, 1);
+        } else if (b.x < 0 || b.x > 4000) bullets.splice(i, 1);
+    });
 
     if (Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
-    conn.send({ type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp });
+    conn.send({ type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp, k:player.kills });
     
+    document.getElementById('kill-count').innerText = player.kills;
     draw();
     requestAnimationFrame(gameLoop);
 }
 
 function draw() {
     const map = maps[selectedMapIndex];
-    ctx.clearRect(0,0,V_WIDTH, V_HEIGHT);
-    ctx.fillStyle = map.bg;
-    ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
-
+    ctx.fillStyle = map.bg; ctx.fillRect(0,0,V_WIDTH, V_HEIGHT);
     ctx.save();
-    let camX = player.x - V_WIDTH / 2;
-    camX = Math.max(0, Math.min(camX, 4000 - V_WIDTH));
+    let camX = Math.max(0, Math.min(player.x - V_WIDTH/2, 4000 - V_WIDTH));
     ctx.translate(-camX, 0);
 
-    map.rects.forEach(p => {
-        ctx.fillStyle = map.plat;
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(p.x, p.y, p.w, 6);
-    });
+    map.rects.forEach(p => { ctx.fillStyle = map.plat; ctx.fillRect(p.x, p.y, p.w, p.h); });
+    
+    // Itens
+    mapItems.forEach(item => { ctx.fillStyle = '#f1c40f'; ctx.fillRect(item.x, item.y, 25, 25); });
 
     drawS(player.x, player.y, player.color, player.facing, player.anim, player.hp, "Você");
     if (remotePlayer.active) drawS(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp, "Rival");
 
-    ctx.fillStyle = '#f1c40f';
-    bullets.forEach(b => ctx.fillRect(b.x, b.y, 18, 5));
+    // Projéteis
+    ctx.fillStyle = 'yellow'; bullets.forEach(b => ctx.fillRect(b.x, b.y, 15, 5));
+    grenades.forEach(g => { ctx.fillStyle = 'lime'; ctx.beginPath(); ctx.arc(g.x, g.y, 8, 0, 7); ctx.fill(); });
+    bombs.forEach(b => { ctx.fillStyle = 'red'; ctx.fillRect(b.x, b.y, 10, 20); });
+
+    // Avião
+    if(plane.active) { ctx.fillStyle = 'silver'; ctx.fillRect(plane.x, 30, 80, 20); }
+
     ctx.restore();
 }
 
 function drawS(x, y, color, f, a, h, name) {
     ctx.save();
-    ctx.fillStyle = 'white'; ctx.font = 'bold 14px Arial'; ctx.fillText(name, x, y - 30);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x, y - 22, 45, 8);
-    ctx.fillStyle = h > 30 ? '#2ecc71' : '#ff4757'; ctx.fillRect(x, y - 22, 45 * (h / 100), 8);
-    ctx.translate(x + 22, y + 32);
-    ctx.scale(f, 1);
-    const leg = Math.sin(a) * 14;
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-leg, 32); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(leg, 32); ctx.stroke();
+    ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.font = 'bold 16px Arial'; ctx.fillText(name, x+22, y-55);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x, y-45, 45, 8);
+    ctx.fillStyle = h > 30 ? '#2ecc71' : '#ff4757'; ctx.fillRect(x, y-45, 45*(h/100), 8);
+    ctx.translate(x+22, y+32); ctx.scale(f, 1);
+    const leg = Math.sin(a)*14; ctx.strokeStyle = '#000'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(-leg, 32); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(leg, 32); ctx.stroke();
     ctx.fillStyle = color; ctx.fillRect(-18, -25, 36, 50);
-    ctx.fillStyle = '#34495e'; ctx.fillRect(-18, 0, 36, 15);
     ctx.fillStyle = '#ffe0bd'; ctx.fillRect(-12, -48, 24, 24);
-    ctx.fillStyle = '#2c3e50'; ctx.fillRect(-14, -52, 28, 10);
     ctx.restore();
 }
 </script>
