@@ -35,7 +35,7 @@
             right: 15px;
             width: 55px;
             height: 55px;
-            background: #8e44ad; /* Roxo inicial */
+            background: #8e44ad;
             border: 3px solid #fff;
             border-radius: 50%;
             display: flex;
@@ -111,7 +111,7 @@
 <div id="menu-container">
     <h1 style="color: white; margin-bottom: 20px;">ELITE AIRBORNE</h1>
     <div class="panel">
-        <h4 style="margin: 5px;">MAPA</h4>
+        <h4 style="margin: 5px;">SELECIONAR MAPA</h4>
         <div style="display: flex;">
             <div id="map-0" class="btn btn-map selected">URBANO</div>
             <div id="map-1" class="btn btn-map">DESERTO</div>
@@ -119,6 +119,7 @@
         </div>
     </div>
     <div class="panel">
+        <h4 style="margin: 5px;">MULTIPLAYER</h4>
         <div style="display: flex; justify-content: space-between;">
             <div id="p1-btn" class="btn btn-p1">CRIAR</div>
             <div id="p2-btn" class="btn btn-p2">ENTRAR</div>
@@ -130,11 +131,11 @@
 <div id="end-screen">
     <h1 id="end-msg">VITÓRIA!</h1>
     <p id="end-stats"></p>
-    <button class="btn btn-p1" onclick="location.reload()">VOLTAR AO MENU</button>
+    <button class="btn btn-p1" onclick="location.reload()">REJOGAR</button>
 </div>
 
 <div id="ui-layer">
-    <div id="stats">KILLS: <span id="kill-count">0</span>/4 | G: <span id="gren-count">0</span></div>
+    <div id="stats">KILLS: <span id="kill-count">0</span>/4 | G: <span id="grenade-count">0</span></div>
     <div id="controls" class="interactive">
         <div id="joystick"><div id="knob"></div></div>
         <div id="btn-group-right">
@@ -152,9 +153,9 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <script>
-// --- MOTOR DE ÁUDIO SINTETIZADO ---
+// --- SISTEMA DE ÁUDIO ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSFX(type) {
+function playSound(type) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
@@ -162,15 +163,15 @@ function playSFX(type) {
     if(type === 'shoot') {
         osc.type = 'square'; osc.frequency.setValueAtTime(150, now);
         osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.1);
-        gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
     } else if(type === 'jump') {
         osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
         osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
-        gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
     } else if(type === 'exp') {
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
         osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
-        gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 0.5);
+        gain.gain.setValueAtTime(0.3, now);
     } else if(type === 'pickup') {
         osc.type = 'triangle'; osc.frequency.setValueAtTime(800, now);
         osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
@@ -190,7 +191,6 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
-// BOTÃO ROTAÇÃO COM COR
 document.getElementById('rotate-ui-btn').addEventListener('touchstart', async (e) => {
     e.preventDefault();
     const btn = e.currentTarget;
@@ -198,11 +198,11 @@ document.getElementById('rotate-ui-btn').addEventListener('touchstart', async (e
         if (screen.orientation.type.includes('portrait')) {
             await document.documentElement.requestFullscreen().catch(() => {});
             await screen.orientation.lock('landscape').catch(() => {});
-            btn.style.background = "#27ae60"; // Verde em paisagem
+            btn.style.background = "#27ae60"; // Verde em Landscape
         } else {
             if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
             await screen.orientation.lock('portrait').catch(() => {});
-            btn.style.background = "#8e44ad"; // Roxo em retrato
+            btn.style.background = "#8e44ad"; // Roxo em Portrait
         }
     }
 });
@@ -224,9 +224,8 @@ const maps = [
 const input = { x: 0, jump: false, shoot: false, gren: false };
 
 function handleTouch(e) {
-    e.preventDefault();
-    const touches = e.touches;
-    let moveX = 0, anyJoy = false;
+    e.preventDefault(); const touches = e.touches;
+    let moveX = 0; let anyJoy = false;
     input.jump = input.shoot = input.gren = false;
 
     for (let t of touches) {
@@ -251,8 +250,7 @@ function handleTouch(e) {
         if (el.id === 'btn-shoot') input.shoot = true;
         if (el.id === 'btn-grenade') input.gren = true;
     }
-    input.x = moveX;
-    if (!anyJoy) document.getElementById('knob').style.transform = `translateX(0)`;
+    input.x = moveX; if (!anyJoy) document.getElementById('knob').style.transform = `translateX(0)`;
 }
 
 document.addEventListener('touchstart', handleTouch, {passive: false});
@@ -261,9 +259,8 @@ document.addEventListener('touchend', (e) => { if (e.touches.length === 0) input
 
 function startPeer(id, host) {
     if (peer) return;
-    isHost = host;
-    peer = new Peer(id);
-    document.getElementById('status-display').innerText = "Iniciando...";
+    isHost = host; peer = new Peer(id);
+    document.getElementById('status-display').innerText = "Iniciando rádio...";
     peer.on('open', () => {
         if (!host) {
             const c = peer.connect(ID_P1);
@@ -276,27 +273,28 @@ function startPeer(id, host) {
 function setupNetwork() {
     conn.on('data', d => {
         if (d.type==='sync') { remotePlayer.targetX=d.x; remotePlayer.targetY=d.y; remotePlayer.facing=d.f; remotePlayer.anim=d.a; remotePlayer.hp=d.h; remotePlayer.active=true; }
-        if (d.type==='shot') { bullets.push({ x:d.x, y:d.y, vx:d.v, owner:'remote' }); playSFX('shoot'); }
+        if (d.type==='shot') { bullets.push({ x:d.x, y:d.y, vx:d.v, owner:'remote' }); playSound('shoot'); }
         if (d.type==='gren') { grens.push({ x:d.x, y:d.y, vx:d.v, vy:-10, timer:60, owner:'remote' }); }
         if (d.type==='map') selectedMapIndex = d.i;
-        if (d.type==='kill') { enemyKills++; checkEndGame(); }
+        if (d.type==='kill') { enemyKills++; checkEnd(); }
     });
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('controls').style.display = 'flex';
-    gameActive = true; spawnItem(); gameLoop();
+    gameActive = true; if(isHost) spawnItems(); gameLoop();
 }
 
-function spawnItem() {
-    if(isHost) items.push({ x: 500 + Math.random()*2000, y: 590 });
-    setTimeout(spawnItem, 10000);
+function spawnItems() {
+    if(!gameActive) return;
+    items.push({ x: 500 + Math.random()*2000, y: 590 });
+    setTimeout(spawnItems, 8000);
 }
 
-function checkEndGame() {
+function checkEnd() {
     if(myKills >= 4 || enemyKills >= 4) {
         gameActive = false;
         document.getElementById('end-screen').style.display = 'flex';
         document.getElementById('end-msg').innerText = myKills >= 4 ? "VOCÊ VENCEU!" : "VOCÊ PERDEU!";
-        document.getElementById('end-stats').innerText = `Placar: ${myKills} vs ${enemyKills}`;
+        document.getElementById('end-stats').innerText = `${myKills} Kills vs ${enemyKills} Kills`;
     }
 }
 
@@ -304,9 +302,8 @@ function gameLoop() {
     if (!gameActive) return;
 
     player.vx = input.x * 8;
-    if (input.jump && player.grounded) { player.vy = -18; player.grounded = false; playSFX('jump'); }
+    if (input.jump && player.grounded) { player.vy = -18; player.grounded = false; playSound('jump'); }
     player.vy += 0.8; player.x += player.vx; player.y += player.vy;
-
     if (player.x < 0) player.x = 0; if (player.x > 3950) player.x = 3950;
 
     player.grounded = false;
@@ -316,31 +313,29 @@ function gameLoop() {
         }
     });
 
-    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.25;
-    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.25;
-
-    // AVIÃO E BOMBAS
+    // AVIÃO
     if(isHost && !plane.active && Math.random() < 0.005) { plane.active = true; plane.x = -500; }
     if(plane.active) {
-        plane.x += 10;
-        if(Math.random() < 0.03) bombs.push({ x: plane.x + 50, y: 100, vy: 5 });
+        plane.x += 12; if(Math.random() < 0.04) bombs.push({x: plane.x + 60, y: 80, vy: 6});
         if(plane.x > 4000) plane.active = false;
     }
+
+    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.25;
+    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.25;
 
     if (input.shoot && Date.now() % 200 < 30) {
         const bvx = player.facing * 20; const bx = player.x + (player.facing === 1 ? player.w : 0);
         bullets.push({ x: bx, y: player.y + 30, vx: bvx, owner: 'me' });
-        conn.send({ type: 'shot', x: bx, y: player.y + 30, v: bvx }); playSFX('shoot');
+        conn.send({ type: 'shot', x: bx, y: player.y + 30, v: bvx }); playSound('shoot');
     }
 
     if (input.gren && player.grens > 0 && Date.now() % 500 < 30) {
-        player.grens--; document.getElementById('gren-count').innerText = player.grens;
-        const vx = player.facing * 12;
-        grens.push({ x: player.x+20, y: player.y, vx, vy: -12, timer: 60, owner: 'me' });
-        conn.send({ type: 'gren', x: player.x+20, y: player.y, v: vx });
+        player.grens--; document.getElementById('grenade-count').innerText = player.grens;
+        const gvx = player.facing * 14;
+        grens.push({ x: player.x+20, y: player.y, vx: gvx, vy: -12, timer: 65, owner: 'me' });
+        conn.send({ type: 'gren', x: player.x+20, y: player.y, v: gvx });
     }
 
-    // Lógica de Projéteis e Dano
     bullets.forEach((b, i) => {
         b.x += b.vx;
         if (b.owner === 'remote' && b.x > player.x && b.x < player.x + 45 && b.y > player.y && b.y < player.y + 65) {
@@ -351,40 +346,37 @@ function gameLoop() {
     grens.forEach((g, i) => {
         g.x += g.vx; g.y += g.vy; g.vy += 0.5; g.timer--;
         if(g.timer <= 0) {
-            playSFX('exp');
-            if(Math.hypot(player.x - g.x, player.y - g.y) < 150) player.hp -= 40;
-            grens.splice(i,1);
+            playSound('exp');
+            if(Math.hypot(player.x - g.x, player.y - g.y) < 150) player.hp -= 35;
+            grens.splice(i, 1);
         }
     });
 
     bombs.forEach((b, i) => {
         b.y += b.vy;
         if(b.y > 600) {
-            playSFX('exp');
-            if(Math.hypot(player.x - b.x, player.y - b.y) < 100) player.hp -= 30;
-            bombs.splice(i,1);
+            playSound('exp');
+            if(Math.hypot(player.x - b.x, player.y - b.y) < 120) player.hp -= 30;
+            bombs.splice(i, 1);
         }
     });
 
     items.forEach((it, i) => {
         if(Math.hypot(player.x - it.x, player.y - it.y) < 50) {
-            player.grens += 3; document.getElementById('gren-count').innerText = player.grens;
-            items.splice(i, 1); playSFX('pickup');
+            player.grens += 3; document.getElementById('grenade-count').innerText = player.grens;
+            items.splice(i, 1); playSound('pickup');
         }
     });
 
     if (player.hp <= 0) { 
         player.hp = 100; player.x = isHost ? 200 : 1500; player.y = 0; 
-        conn.send({type:'kill'}); enemyKills++; // O oponente ganha o ponto
-        document.getElementById('kill-count').innerText = myKills; // No meu HUD mostra meus pontos
-        checkEndGame();
+        enemyKills++; conn.send({type:'kill'}); checkEnd();
     }
 
     if (Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
     conn.send({ type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp });
     
-    draw();
-    requestAnimationFrame(gameLoop);
+    draw(); requestAnimationFrame(gameLoop);
 }
 
 function draw() {
@@ -395,11 +387,11 @@ function draw() {
     ctx.translate(-camX, 0);
 
     map.rects.forEach(p => { ctx.fillStyle = map.plat; ctx.fillRect(p.x, p.y, p.w, p.h); });
-
-    if(plane.active) { ctx.fillStyle = '#34495e'; ctx.fillRect(plane.x, 50, 120, 30); }
-    items.forEach(it => { ctx.fillStyle = '#2ecc71'; ctx.fillRect(it.x, it.y, 30, 30); });
-    bombs.forEach(b => { ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, 7); ctx.fill(); });
-    grens.forEach(g => { ctx.fillStyle = g.timer % 10 < 5 ? 'red' : 'black'; ctx.beginPath(); ctx.arc(g.x, g.y, 8, 0, 7); ctx.fill(); });
+    
+    if(plane.active) { ctx.fillStyle='#34495e'; ctx.fillRect(plane.x, 40, 120, 30); }
+    items.forEach(it => { ctx.fillStyle='#2ecc71'; ctx.fillRect(it.x, it.y, 30, 30); });
+    bombs.forEach(b => { ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, 7); ctx.fill(); });
+    grens.forEach(g => { ctx.fillStyle=g.timer % 10 < 5 ? 'red' : 'black'; ctx.beginPath(); ctx.arc(g.x, g.y, 8, 0, 7); ctx.fill(); });
 
     drawS(player.x, player.y, player.color, player.facing, player.anim, player.hp, "Você");
     if (remotePlayer.active) drawS(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp, "Rival");
@@ -411,7 +403,7 @@ function draw() {
 function drawS(x, y, color, f, a, h, name) {
     ctx.save();
     ctx.fillStyle = 'white'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.fillText(name, x + 22, y - 60);
-    // Barra de vida ajustada para cima
+    // Barra de vida subida para y - 52
     ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x, y - 52, 45, 8);
     ctx.fillStyle = h > 30 ? '#2ecc71' : '#ff4757'; ctx.fillRect(x, y - 52, 45 * (h / 100), 8);
     ctx.translate(x + 22, y + 32); ctx.scale(f, 1);
