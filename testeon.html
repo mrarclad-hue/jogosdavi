@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elite Airborne Online - Sincronizado</title>
+    <title>Elite Airborne - Battle Mode</title>
     <style>
         body { margin: 0; overflow: hidden; background: #1e272e; font-family: sans-serif; touch-action: none; }
         canvas { display: block; background: #2980b9; }
@@ -21,7 +21,7 @@
         #status-display { color: #fff; margin-top: 20px; font-family: monospace; text-align: center; }
 
         #controls { position: absolute; bottom: 30px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; }
-        .control-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.3); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; pointer-events: auto; }
+        .control-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.3); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; pointer-events: auto; user-select: none; }
         #joystick { width: 120px; height: 120px; border: 3px solid #fff; border-radius: 50%; position: relative; }
         #knob { width: 50px; height: 50px; background: #fff; border-radius: 50%; position: absolute; top: 35px; left: 35px; }
     </style>
@@ -29,10 +29,10 @@
 <body>
 
 <div id="menu-container">
-    <h1 style="color: white;">ELITE AIRBORNE ONLINE</h1>
-    <button id="p1-btn" class="btn">JOGADOR 1 (CELULAR)</button>
-    <button id="p2-btn" class="btn">JOGADOR 2 (TABLET)</button>
-    <div id="status-display">Aguardando conexão...</div>
+    <h1 style="color: white;">ELITE AIRBORNE: BATTLE</h1>
+    <button id="p1-btn" class="btn">JOGADOR 1 (AZUL)</button>
+    <button id="p2-btn" class="btn">JOGADOR 2 (LARANJA)</button>
+    <div id="status-display">Conecte os dispositivos para lutar!</div>
 </div>
 
 <div id="controls">
@@ -48,42 +48,47 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <script>
-const statusText = document.getElementById('status-display');
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
-// Ajuste de tela
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 const ID_P1 = "JOGADOR2DUO2026";
 const ID_P2 = "AQUISERABOM2026";
 let peer, conn, isHost = false, gameActive = false;
 
-// Coordenadas ABSOLUTAS (Igual para Celular e Tablet)
-const GROUND_Y = 500; 
+// Configurações Fixas para Sincronia
+const GROUND_Y = 550;
+const gravity = 0.8;
 
-const player = { x: 300, y: 0, w: 40, h: 60, vx: 0, vy: 0, facing: 1, anim: 0, color: '#3498db', grounded: false };
-const remotePlayer = { x: 300, y: 0, facing: 1, anim: 0, color: '#e67e22', active: false };
-const input = { x: 0, jump: false, shoot: false };
+const player = { x: 200, y: 0, w: 40, h: 60, vx: 0, vy: 0, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false };
+const remotePlayer = { x: 600, y: 0, w: 40, h: 60, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
+
 const bullets = [];
+const input = { x: 0, jump: false, shoot: false };
 const camera = { x: 0 };
 
-// --- REDE ---
+// Plataformas em 3 Níveis
+const platforms = [
+    {x: -1000, y: GROUND_Y, w: 7000, h: 200}, // Nível 0 (Chão)
+    {x: 200, y: GROUND_Y - 120, w: 400, h: 20}, // Nível 1
+    {x: 800, y: GROUND_Y - 120, w: 400, h: 20}, // Nível 1
+    {x: 500, y: GROUND_Y - 240, w: 400, h: 20}, // Nível 2
+    {x: 300, y: GROUND_Y - 360, w: 200, h: 20}, // Nível 3
+    {x: 900, y: GROUND_Y - 360, w: 200, h: 20}  // Nível 3
+];
+
+// --- CONEXÃO ---
 document.getElementById('p1-btn').onclick = () => { player.color = '#3498db'; remotePlayer.color = '#e67e22'; startPeer(ID_P1, true); };
 document.getElementById('p2-btn').onclick = () => { player.color = '#e67e22'; remotePlayer.color = '#3498db'; startPeer(ID_P2, false); };
 
 function startPeer(id, host) {
     isHost = host;
     peer = new Peer(id);
-    statusText.innerText = "Conectando...";
+    document.getElementById('status-display').innerText = "Iniciando rádio...";
 
-    peer.on('open', (id) => {
-        statusText.innerText = "Online! ID: " + id;
+    peer.on('open', () => {
+        document.getElementById('status-display').innerText = "Online! Aguardando oponente...";
         if (!isHost) tryConnect();
     });
 
@@ -101,17 +106,14 @@ function tryConnect() {
 function setupNetwork() {
     conn.on('data', (data) => {
         if (data.type === 'sync') {
-            remotePlayer.x = data.x;
-            remotePlayer.y = data.y;
-            remotePlayer.facing = data.facing;
-            remotePlayer.anim = data.anim;
-            remotePlayer.active = true;
+            remotePlayer.x = data.x; remotePlayer.y = data.y;
+            remotePlayer.facing = data.facing; remotePlayer.anim = data.anim;
+            remotePlayer.hp = data.hp; remotePlayer.active = true;
         }
         if (data.type === 'shoot') {
-            bullets.push({ x: data.x, y: data.y, vx: data.vx });
+            bullets.push({ x: data.x, y: data.y, vx: data.vx, owner: 'remote' });
         }
     });
-    
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('controls').style.display = 'flex';
     gameActive = true;
@@ -138,44 +140,62 @@ document.addEventListener('touchstart', handleTouch);
 document.addEventListener('touchmove', handleTouch);
 document.addEventListener('touchend', () => { input.x = 0; document.getElementById('knob').style.transform = `translateX(0)`; });
 
-// --- JOGO ---
+// --- LÓGICA DO JOGO ---
 function gameLoop() {
     if (!gameActive) return;
 
-    // Física
+    // Movimento e Gravidade
     player.vx = input.x * 7;
     if (input.jump && player.grounded) { player.vy = -16; player.grounded = false; }
-    
-    player.vy += 0.8;
+    player.vy += gravity;
     player.x += player.vx;
     player.y += player.vy;
 
-    // CHÃO ABSOLUTO (Sincroniza Celular e Tablet)
-    if (player.y > GROUND_Y - player.h) {
-        player.y = GROUND_Y - player.h;
-        player.vy = 0;
-        player.grounded = true;
-    }
+    // Colisão com Plataformas
+    player.grounded = false;
+    platforms.forEach(p => {
+        if (player.x + 15 < p.x + p.w && player.x + 25 > p.x) {
+            if (player.vy >= 0 && player.y + player.h >= p.y && player.y + player.h <= p.y + 20) {
+                player.y = p.y - player.h;
+                player.vy = 0;
+                player.grounded = true;
+            }
+        }
+    });
 
-    if (Math.abs(player.vx) > 0.1) {
-        player.facing = player.vx > 0 ? 1 : -1;
-        player.anim += 0.2;
-    }
-
-    // Tiro
-    if (input.shoot && Date.now() % 200 < 20) {
+    // Atirar e Dano
+    if (input.shoot && Date.now() % 250 < 20) {
         const bx = player.x + (player.facing * 40);
-        const bvx = player.facing * 15;
-        bullets.push({ x: bx, y: player.y + 25, vx: bvx });
+        const bvx = player.facing * 16;
+        bullets.push({ x: bx, y: player.y + 25, vx: bvx, owner: 'me' });
         conn.send({ type: 'shoot', x: bx, y: player.y + 25, vx: bvx });
     }
 
-    // Sincronização de posição
-    conn.send({ type: 'sync', x: player.x, y: player.y, facing: player.facing, anim: player.anim });
+    bullets.forEach((b, i) => {
+        b.x += b.vx;
+        // Checar se meu tiro acertou o inimigo
+        if (b.owner === 'me' && remotePlayer.active) {
+            if (b.x > remotePlayer.x && b.x < remotePlayer.x + 40 && b.y > remotePlayer.y && b.y < remotePlayer.y + 60) {
+                bullets.splice(i, 1);
+                // O dano é visualizado quando o oponente envia a vida dele atualizada
+            }
+        }
+        // Checar se o tiro do inimigo me acertou
+        if (b.owner === 'remote') {
+            if (b.x > player.x && b.x < player.x + 40 && b.y > player.y && b.y < player.y + 60) {
+                bullets.splice(i, 1);
+                player.hp -= 5;
+                if (player.hp < 0) { player.hp = 100; player.x = isHost ? 200 : 600; player.y = 0; }
+            }
+        }
+    });
 
-    bullets.forEach(b => b.x += b.vx);
+    if (Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
+
+    // Sincronizar
+    conn.send({ type: 'sync', x: player.x, y: player.y, facing: player.facing, anim: player.anim, hp: player.hp });
+
     camera.x = player.x - canvas.width / 2;
-
     draw();
     requestAnimationFrame(gameLoop);
 }
@@ -185,25 +205,36 @@ function draw() {
     ctx.save();
     ctx.translate(-camera.x, 0);
 
-    // Chão desenhado na posição ABSOLUTA
-    ctx.fillStyle = '#2d3436';
-    ctx.fillRect(-1000, GROUND_Y, 7000, 1000); 
-    ctx.fillStyle = '#27ae60';
-    ctx.fillRect(-1000, GROUND_Y, 7000, 10); // Grama
+    // Desenhar Plataformas
+    platforms.forEach(p => {
+        ctx.fillStyle = '#2d3436';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = '#27ae60';
+        ctx.fillRect(p.x, p.y, p.w, 6);
+    });
 
-    // Jogadores
-    drawSoldier(player.x, player.y, player.color, player.facing, player.anim);
-    if (remotePlayer.active) drawSoldier(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim);
+    // Jogadores e Barras de Vida
+    drawSoldier(player.x, player.y, player.color, player.facing, player.anim, player.hp);
+    if (remotePlayer.active) {
+        drawSoldier(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp);
+    }
 
     // Balas
     ctx.fillStyle = '#f1c40f';
-    bullets.forEach(b => ctx.fillRect(b.x, b.y, 20, 6));
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, 15, 5));
 
     ctx.restore();
 }
 
-function drawSoldier(x, y, color, facing, anim) {
+function drawSoldier(x, y, color, facing, anim, hp) {
     ctx.save();
+    // Barra de Vida
+    const barW = 50;
+    ctx.fillStyle = 'red';
+    ctx.fillRect(x - 5, y - 15, barW, 6);
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(x - 5, y - 15, barW * (hp / 100), 6);
+
     ctx.translate(x + 20, y + 30);
     ctx.scale(facing, 1);
     const legMove = Math.sin(anim) * 10;
