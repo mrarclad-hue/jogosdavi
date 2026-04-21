@@ -3,87 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Elite Airborne - Tactical Battle</title>
+    <title>Elite Airborne - Fixed Edition</title>
     <style>
-        * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            touch-action: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body { 
-            margin: 0; overflow: hidden; background: #1e272e; 
-            font-family: 'Segoe UI', sans-serif; display: flex;
-            justify-content: center; align-items: center; height: 100vh;
-        }
-
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; overflow: hidden; background: #1e272e; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
         canvas { display: block; background: #000; }
-        
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
-
-        #rotate-ui-btn {
-            position: absolute; top: 15px; right: 15px; width: 55px; height: 55px;
-            background: #8e44ad; border: 3px solid #fff; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; z-index: 1100;
-            color: white; font-size: 24px; pointer-events: auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: background 0.3s;
-        }
-
-        #menu-container, #end-screen {
-            position: absolute; width: 100%; height: 100%; background: #1e272e;
-            z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+        #rotate-ui-btn { position: absolute; top: 15px; right: 15px; width: 55px; height: 55px; background: #8e44ad; border: 3px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 1100; color: white; font-size: 24px; pointer-events: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        #menu-container, #end-screen { position: absolute; width: 100%; height: 100%; background: #1e272e; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #end-screen { background: rgba(0,0,0,0.9); color: white; display: none; }
-
-        .panel { 
-            background: #2f3640; padding: 15px; border-radius: 15px; 
-            border: 2px solid #3498db; text-align: center; color: white; 
-            margin-bottom: 10px; width: 85%; max-width: 350px; 
-        }
-
+        .panel { background: #2f3640; padding: 15px; border-radius: 15px; border: 2px solid #3498db; text-align: center; color: white; margin-bottom: 10px; width: 85%; max-width: 350px; }
         .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; cursor: pointer; }
         .btn-p1 { background: #3498db; width: 45%; }
         .btn-p2 { background: #e67e22; width: 45%; }
         .btn-map { background: #7f8c8d; flex: 1; margin: 2px; font-size: 10px; }
         .btn-map.selected { background: #27ae60; border: 2px solid #fff; }
-
-        /* Controles Fixos: Esquerda (Joystick) e Direita (Ações) */
-        #controls { 
-            position: absolute; bottom: 30px; width: 100%; 
-            display: none; justify-content: space-between; 
-            padding: 0 40px; box-sizing: border-box; align-items: flex-end;
-        }
-        
-        .control-btn { 
-            width: 80px; height: 80px; border-radius: 50%; 
-            background: rgba(255,255,255,0.2); color: white; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; border: 3px solid rgba(255,255,255,0.4); margin: 5px;
-        }
-
-        #joystick { 
-            width: 130px; height: 130px; border: 4px solid rgba(255,255,255,0.3); 
-            border-radius: 50%; position: relative; background: rgba(255,255,255,0.1);
-        }
-        #knob { width: 55px; height: 55px; background: #fff; border-radius: 50%; position: absolute; top: 37.5px; left: 37.5px; }
-
-        #btn-group-right { display: flex; flex-direction: column; align-items: center; }
-        #room-code-display { font-size: 22px; color: #f1c40f; font-weight: bold; margin-bottom: 15px; display: none; text-align: center; }
+        #controls { position: absolute; bottom: 30px; width: 100%; display: none; justify-content: space-between; padding: 0 40px; box-sizing: border-box; align-items: flex-end; }
+        .control-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid rgba(255,255,255,0.4); margin: 5px; }
+        #joystick { width: 130px; height: 130px; border: 4px solid rgba(255,255,255,0.3); border-radius: 50%; position: relative; background: rgba(255,255,255,0.1); pointer-events: auto; }
+        #knob { width: 55px; height: 55px; background: #fff; border-radius: 50%; position: absolute; top: 37.5px; left: 37.5px; pointer-events: none; }
+        #btn-group-right { display: flex; flex-direction: column; align-items: center; pointer-events: auto; }
         #stats { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; font-size: 14px; border: 1px solid #3498db; }
+        #room-code-display { font-size: 22px; color: #f1c40f; font-weight: bold; margin-bottom: 15px; display: none; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
 <div id="rotate-ui-btn" class="interactive">🔄</div>
 
 <div id="menu-container">
-    <h1 style="color: white; margin-bottom: 20px;">ELITE AIRBORNE</h1>
+    <h1 style="color: white;">ELITE AIRBORNE</h1>
     <div id="room-code-display">CÓDIGO: <span id="code-number">----</span></div>
     <div class="panel">
-        <h4 style="margin: 5px;">MAPA</h4>
+        <h4>MAPA</h4>
         <div style="display: flex;">
             <div id="map-0" class="btn btn-map selected">URBANO</div>
             <div id="map-1" class="btn btn-map">DESERTO</div>
@@ -91,30 +44,28 @@
         </div>
     </div>
     <div class="panel">
-        <h4 style="margin: 5px;">MULTIPLAYER</h4>
         <div style="display: flex; justify-content: space-between;">
             <div id="p1-btn" class="btn btn-p1">CRIAR</div>
             <div id="p2-btn" class="btn btn-p2">ENTRAR</div>
         </div>
     </div>
-    <div id="status-display" style="color: #bdc3c7; font-size: 13px;">Aguardando...</div>
+    <div id="status-display" style="color: #bdc3c7;">Aguardando...</div>
 </div>
 
 <div id="end-screen">
-    <h1 id="end-msg">VITÓRIA!</h1>
-    <p id="end-stats"></p>
-    <button class="btn btn-p1" onclick="location.reload()">REJOGAR</button>
+    <h1 id="end-msg">FIM DE JOGO</h1>
+    <button class="btn btn-p1" onclick="location.reload()">RECOMECAR</button>
 </div>
 
 <div id="ui-layer">
-    <div id="stats">KILLS: <span id="kill-count">0</span>/4 | G: <span id="grenade-count">0</span></div>
-    <div id="controls" class="interactive">
+    <div id="stats">KILLS: <span id="kill-count">0</span> | G: <span id="grenade-count">0</span></div>
+    <div id="controls">
         <div id="joystick"><div id="knob"></div></div>
-        <div id="btn-group-right">
-            <div id="btn-grenade" class="control-btn" style="background: rgba(241, 196, 15, 0.4);">GRANADA</div>
+        <div id="btn-group-right" class="interactive">
+            <div id="btn-grenade" class="control-btn" style="background: rgba(241,196,15,0.4);">GRANADA</div>
             <div style="display: flex;">
-                <div id="btn-jump" class="control-btn" style="background: rgba(46, 204, 113, 0.4);">PULAR</div>
-                <div id="btn-shoot" class="control-btn" style="background: rgba(231, 76, 60, 0.4);">FOGO</div>
+                <div id="btn-jump" class="control-btn" style="background: rgba(46,204,113,0.4);">PULAR</div>
+                <div id="btn-shoot" class="control-btn" style="background: rgba(231,76,60,0.4);">FOGO</div>
             </div>
         </div>
     </div>
@@ -123,24 +74,10 @@
 <canvas id="gameCanvas"></canvas>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
 <script>
-// --- AUDIO ENGINE ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSound(type) {
-    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    const now = audioCtx.currentTime;
-    if(type==='shoot'){ osc.type='square'; osc.frequency.setValueAtTime(150,now); gain.gain.setValueAtTime(0.1,now); osc.stop(now+0.1); }
-    else if(type==='jump'){ osc.type='sine'; osc.frequency.setValueAtTime(400,now); gain.gain.setValueAtTime(0.1,now); osc.stop(now+0.1); }
-    else if(type==='exp'){ osc.type='sawtooth'; osc.frequency.setValueAtTime(80,now); gain.gain.setValueAtTime(0.3,now); osc.stop(now+0.4); }
-    osc.start();
-}
-
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const V_WIDTH = 1280; const V_HEIGHT = 720; 
-
+const V_WIDTH = 1280, V_HEIGHT = 720;
 function resize() {
     const scale = Math.min(window.innerWidth / V_WIDTH, window.innerHeight / V_HEIGHT);
     canvas.width = V_WIDTH * scale; canvas.height = V_HEIGHT * scale;
@@ -148,31 +85,26 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
-// ROTAÇÃO E FEEDBACK VISUAL
+// Botão de Rotação com Fullscreen condicional
 document.getElementById('rotate-ui-btn').addEventListener('touchstart', async (e) => {
     e.preventDefault();
-    const btn = e.currentTarget;
     if (screen.orientation && screen.orientation.lock) {
         if (screen.orientation.type.includes('portrait')) {
             await document.documentElement.requestFullscreen().catch(() => {});
             await screen.orientation.lock('landscape').catch(() => {});
-            btn.style.background = "#27ae60"; 
+            e.currentTarget.style.background = "#27ae60";
         } else {
             if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
             await screen.orientation.lock('portrait').catch(() => {});
-            btn.style.background = "#8e44ad"; 
+            e.currentTarget.style.background = "#8e44ad";
         }
     }
 });
 
-// --- LÓGICA DE JOGO ---
-let peer, conn, isHost = false, gameActive = false, myKills = 0, enemyKills = 0;
-const ROOM_PREFIX = "AIR-ROOM-";
-
-const player = { x: 200, y: 0, vx: 0, vy: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false, grens: 0 };
+let peer, conn, isHost = false, gameActive = false, myKills = 0;
+const player = { x: 200, y: 0, vx: 0, vy: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#3498db', hp: 100, grounded: false, grens: 3 };
 const remotePlayer = { x: 600, y: 0, targetX: 600, targetY: 0, w: 45, h: 65, facing: 1, anim: 0, color: '#e67e22', hp: 100, active: false };
-let bullets = [], grens = [], items = [], bombs = [], plane = { x: -500, active: false };
-let selectedMapIndex = 0;
+let bullets = [], grens = [], bombs = [], plane = { x: -500, active: false }, selectedMapIndex = 0;
 
 const maps = [
     { bg: '#2c3e50', plat: '#7f8c8d', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 400, y: 450, w: 400, h: 30}, {x: 1000, y: 350, w: 400, h: 30}] },
@@ -180,18 +112,30 @@ const maps = [
     { bg: '#1b1464', plat: '#0652DD', rects: [{x: 0, y: 620, w: 4000, h: 100}, {x: 300, y: 420, w: 500, h: 30}, {x: 900, y: 300, w: 300, h: 30}] }
 ];
 
-const input = { x: 0, jump: false, shoot: false, gren: false };
+const input = { x: 0, jump: false, shoot: false, gren: false, joyId: null };
 
 function handleTouch(e) {
     e.preventDefault();
     const touches = e.touches;
-    let moveX = 0; let anyJoy = false;
     input.jump = input.shoot = input.gren = false;
+    let joyFound = false;
 
     for (let t of touches) {
         const el = document.elementFromPoint(t.clientX, t.clientY);
-        if (!el) continue;
+        
+        // Se for o toque do joystick (mesmo que saia da área, rastreamos pelo ID)
+        if (el && (el.id === 'joystick' || el.id === 'knob') || t.identifier === input.joyId) {
+            if (input.joyId === null) input.joyId = t.identifier;
+            const rect = document.getElementById('joystick').getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const dist = t.clientX - centerX;
+            input.x = dist < 0 ? -1 : 1;
+            document.getElementById('knob').style.transform = `translateX(${Math.max(-35, Math.min(35, dist))}px)`;
+            joyFound = true;
+            continue;
+        }
 
+        if (!el) continue;
         if (!gameActive) {
             if (el.id === 'p1-btn') createRoom();
             if (el.id === 'p2-btn') joinRoom();
@@ -200,123 +144,94 @@ function handleTouch(e) {
                 document.querySelectorAll('.btn-map').forEach((b, i) => b.classList.toggle('selected', i === selectedMapIndex));
             }
         }
-
-        // Joystick Corrigido: Movimento baseado no arrasto, não para se sair do círculo
-        if (el.id === 'joystick' || el.id === 'knob') {
-            const rect = document.getElementById('joystick').getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const dist = t.clientX - centerX;
-            moveX = dist < 0 ? -1 : 1;
-            document.getElementById('knob').style.transform = `translateX(${Math.max(-35, Math.min(35, dist))}px)`;
-            anyJoy = true;
-        }
-
         if (el.id === 'btn-jump') input.jump = true;
         if (el.id === 'btn-shoot') input.shoot = true;
         if (el.id === 'btn-grenade') input.gren = true;
     }
-    input.x = moveX;
-    if (!anyJoy) document.getElementById('knob').style.transform = `translateX(0)`;
+    if (!joyFound) { input.x = 0; input.joyId = null; document.getElementById('knob').style.transform = `translateX(0)`; }
 }
 
 document.addEventListener('touchstart', handleTouch, {passive: false});
 document.addEventListener('touchmove', handleTouch, {passive: false});
-document.addEventListener('touchend', (e) => { if (e.touches.length === 0) input.x = 0; handleTouch(e); }, {passive: false});
+document.addEventListener('touchend', handleTouch, {passive: false});
 
 function createRoom() {
-    if (peer) return;
-    const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
-    isHost = true;
-    peer = new Peer(ROOM_PREFIX + roomCode);
-    peer.on('open', () => {
-        document.getElementById('code-number').innerText = roomCode;
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    isHost = true; peer = new Peer("AIR-"+code);
+    peer.on('open', () => { 
+        document.getElementById('code-number').innerText = code;
         document.getElementById('room-code-display').style.display = 'block';
-        document.getElementById('status-display').innerText = "Aguardando rival...";
+        document.getElementById('status-display').innerText = "Aguardando...";
     });
-    peer.on('connection', (c) => { conn = c; conn.on('open', () => { conn.send({type:'map', i:selectedMapIndex}); setupNetwork(); })});
+    peer.on('connection', c => { conn = c; conn.on('open', () => { conn.send({type:'map', i:selectedMapIndex}); setupNetwork(); })});
+    peer.on('error', () => location.reload());
 }
 
 function joinRoom() {
-    const code = prompt("Código da Sala:");
-    if (!code) return;
+    const code = prompt("Código:"); if(!code) return;
     isHost = false; peer = new Peer();
-    peer.on('open', () => {
-        const c = peer.connect(ROOM_PREFIX + code);
-        c.on('open', () => { conn = c; setupNetwork(); });
+    peer.on('open', () => { 
+        conn = peer.connect("AIR-"+code); 
+        conn.on('open', setupNetwork);
     });
 }
 
 function setupNetwork() {
     conn.on('data', d => {
-        if (d.type==='sync') { remotePlayer.targetX=d.x; remotePlayer.targetY=d.y; remotePlayer.facing=d.f; remotePlayer.anim=d.a; remotePlayer.hp=d.h; remotePlayer.active=true; }
-        if (d.type==='shot') { bullets.push({ x:d.x, y:d.y, vx:d.v, owner:'remote' }); playSound('shoot'); }
-        if (d.type==='gren') { grens.push({ x:d.x, y:d.y, vx:d.v, vy:-10, timer:70, owner:'remote' }); }
-        if (d.type==='plane') { plane.active = true; plane.x = -500; }
-        if (d.type==='map') selectedMapIndex = d.i;
-        if (d.type==='kill') { myKills++; document.getElementById('kill-count').innerText = myKills; checkEnd(); }
+        if(d.type==='sync'){ remotePlayer.targetX=d.x; remotePlayer.targetY=d.y; remotePlayer.facing=d.f; remotePlayer.anim=d.a; remotePlayer.hp=d.h; remotePlayer.active=true; }
+        if(d.type==='shot') bullets.push({x:d.x, y:d.y, vx:d.v, owner:'remote'});
+        if(d.type==='gren') grens.push({x:d.x, y:d.y, vx:d.v, vy:-12, timer:70, owner:'remote'});
+        if(d.type==='plane') { plane.active = true; plane.x = -500; }
+        if(d.type==='map') selectedMapIndex = d.i;
+        if(d.type==='kill') { myKills++; document.getElementById('kill-count').innerText = myKills; }
     });
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('controls').style.display = 'flex';
-    gameActive = true; if(isHost) spawnLoop(); gameLoop();
-}
-
-function spawnLoop() {
-    if(!gameActive) return;
-    if(Math.random() < 0.3) { plane.active = true; plane.x = -500; conn.send({type:'plane'}); }
-    items.push({ x: 500 + Math.random()*2500, y: 590 });
-    setTimeout(spawnLoop, 12000);
-}
-
-function checkEnd() {
-    if(myKills >= 4 || enemyKills >= 4) {
-        gameActive = false; document.getElementById('end-screen').style.display = 'flex';
-        document.getElementById('end-msg').innerText = myKills >= 4 ? "VITÓRIA!" : "DERROTA!";
-        document.getElementById('end-stats').innerText = `${myKills} Kills vs ${enemyKills}`;
-    }
+    gameActive = true; gameLoop();
 }
 
 function gameLoop() {
-    if (!gameActive) return;
+    if(!gameActive) return;
 
     player.vx = input.x * 8;
-    if (input.jump && player.grounded) { player.vy = -18; player.grounded = false; playSound('jump'); }
+    if(input.jump && player.grounded){ player.vy = -18; player.grounded = false; }
     player.vy += 0.8; player.x += player.vx; player.y += player.vy;
-    if (player.x < 0) player.x = 0; if (player.x > 3950) player.x = 3950;
+    if(player.x < 0) player.x = 0; if(player.x > 3950) player.x = 3950;
 
     player.grounded = false;
     maps[selectedMapIndex].rects.forEach(p => {
-        if (player.x + player.w > p.x && player.x < p.x + p.w && player.vy >= 0 && player.y + player.h <= p.y + 10 && player.y + player.h + player.vy >= p.y) {
+        if(player.x + player.w > p.x && player.x < p.x + p.w && player.vy >= 0 && player.y + player.h <= p.y + 10 && player.y + player.h + player.vy >= p.y) {
             player.y = p.y - player.h; player.vy = 0; player.grounded = true;
         }
     });
 
-    if(plane.active) {
+    if(isHost && Math.random() < 0.002 && !plane.active) { plane.active = true; plane.x = -500; conn.send({type:'plane'}); }
+    if(plane.active) { 
         plane.x += 12; if(Math.random() < 0.05) bombs.push({x: plane.x + 60, y: 80, vy: 7});
         if(plane.x > 4000) plane.active = false;
     }
 
-    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.25;
-    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.25;
+    remotePlayer.x += (remotePlayer.targetX - remotePlayer.x) * 0.2;
+    remotePlayer.y += (remotePlayer.targetY - remotePlayer.y) * 0.2;
 
-    if (input.shoot && Date.now() % 200 < 30) {
+    if(input.shoot && Date.now() % 200 < 30) {
         const bx = player.x + (player.facing === 1 ? player.w : 0);
-        bullets.push({ x: bx, y: player.y + 30, vx: player.facing * 20, owner: 'me' });
-        conn.send({ type: 'shot', x: bx, y: player.y + 30, v: player.facing * 20 }); playSound('shoot');
+        bullets.push({x: bx, y: player.y + 30, vx: player.facing * 20, owner: 'me'});
+        conn.send({type: 'shot', x: bx, y: player.y+30, v: player.facing*20});
     }
 
-    if (input.gren && player.grens > 0 && Date.now() % 500 < 30) {
+    if(input.gren && player.grens > 0 && Date.now() % 500 < 30) {
         player.grens--; document.getElementById('grenade-count').innerText = player.grens;
-        grens.push({ x: player.x+20, y: player.y, vx: player.facing * 14, vy: -12, timer: 70, owner: 'me' });
-        conn.send({ type: 'gren', x: player.x+20, y: player.y, v: player.facing * 14 });
+        grens.push({x: player.x+20, y: player.y, vx: player.facing*14, vy:-12, timer:70, owner:'me'});
+        conn.send({type:'gren', x:player.x+20, y:player.y, v:player.facing*14});
     }
 
-    // Colisão Projéteis e Bombas
+    // Colisão de Explosivos (Granadas e Bombas)
     [...grens, ...bombs].forEach((g, i) => {
-        if(g.vy !== undefined) { g.x += (g.vx||0); g.y += g.vy; g.vy += 0.4; }
+        g.x = (g.x || 0) + (g.vx || 0); g.y += (g.vy || 0); g.vy = (g.vy || 0) + 0.4;
         maps[selectedMapIndex].rects.forEach(p => {
-            if(g.x > p.x && g.x < p.x+p.w && g.y > p.y && g.y < p.y+15) {
-                playSound('exp');
-                if(Math.hypot(player.x - g.x, player.y - g.y) < 140) player.hp -= 30;
+            if(g.x > p.x && g.x < p.x+p.w && g.y > p.y && g.y < p.y+20) {
+                if(Math.hypot(player.x - g.x, player.y - g.y) < 150) player.hp -= 30;
                 (g.timer !== undefined ? grens : bombs).splice(i,1);
             }
         });
@@ -324,25 +239,16 @@ function gameLoop() {
 
     bullets.forEach((b, i) => {
         b.x += b.vx;
-        if (b.owner === 'remote' && b.x > player.x && b.x < player.x + 45 && b.y > player.y && b.y < player.y + 65) {
-            player.hp -= 10; bullets.splice(i, 1);
-        } else if (b.x < 0 || b.x > 4000) bullets.splice(i, 1);
+        if(b.owner === 'remote' && b.x > player.x && b.x < player.x+45 && b.y > player.y && b.y < player.y+65) {
+            player.hp -= 10; bullets.splice(i,1);
+        } else if(b.x < 0 || b.x > 4000) bullets.splice(i,1);
     });
 
-    items.forEach((it, i) => {
-        if(Math.hypot(player.x - it.x, player.y - it.y) < 50) {
-            player.grens += 3; document.getElementById('grenade-count').innerText = player.grens;
-            items.splice(i, 1);
-        }
-    });
-
-    if (player.hp <= 0) { 
-        player.hp = 100; player.x = isHost ? 200 : 3500; enemyKills++; 
-        conn.send({type:'kill'}); checkEnd();
-    }
-
-    if (Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
-    conn.send({ type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp });
+    if(player.hp <= 0) { player.hp = 100; player.x = isHost ? 200 : 3500; conn.send({type:'kill'}); }
+    if(Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
+    
+    // Throttle de Sincronização para evitar travas
+    if(Date.now() % 30 < 16) conn.send({type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp});
     
     draw(); requestAnimationFrame(gameLoop);
 }
@@ -351,17 +257,13 @@ function draw() {
     const map = maps[selectedMapIndex];
     ctx.fillStyle = map.bg; ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
     ctx.save();
-    let camX = Math.max(0, Math.min(player.x - V_WIDTH / 2, 4000 - V_WIDTH));
-    ctx.translate(-camX, 0);
-
+    ctx.translate(-Math.max(0, Math.min(player.x - V_WIDTH/2, 4000 - V_WIDTH)), 0);
     map.rects.forEach(p => { ctx.fillStyle = map.plat; ctx.fillRect(p.x, p.y, p.w, p.h); });
     if(plane.active) { ctx.fillStyle='#34495e'; ctx.fillRect(plane.x, 40, 120, 30); }
-    items.forEach(it => { ctx.fillStyle='#2ecc71'; ctx.fillRect(it.x, it.y, 30, 30); });
     bombs.forEach(b => { ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, 7); ctx.fill(); });
     grens.forEach(g => { ctx.fillStyle='red'; ctx.beginPath(); ctx.arc(g.x, g.y, 8, 0, 7); ctx.fill(); });
-
     drawS(player.x, player.y, player.color, player.facing, player.anim, player.hp, "Você");
-    if (remotePlayer.active) drawS(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp, "Rival");
+    if(remotePlayer.active) drawS(remotePlayer.x, remotePlayer.y, remotePlayer.color, remotePlayer.facing, remotePlayer.anim, remotePlayer.hp, "Rival");
     ctx.fillStyle = '#f1c40f'; bullets.forEach(b => ctx.fillRect(b.x, b.y, 18, 5));
     ctx.restore();
 }
