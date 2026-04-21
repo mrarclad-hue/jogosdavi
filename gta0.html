@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Pixel GTA - City Crisis</title>
+    <style>
+        /* Bloqueio de menus de sistema e seleção */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            outline: none;
+        }
+
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #27ae60; 
+            font-family: 'Courier New', Courier, monospace; 
+            touch-action: none; 
+        }
+
+        #ui {
+            position: absolute; top: 10px; left: 10px; color: #fff;
+            text-shadow: 2px 2px #000; pointer-events: none; z-index: 10;
+        }
+        .stat { background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 5px; margin-bottom: 5px; border-left: 4px solid #f1c40f; }
+
+        canvas { display: block; image-rendering: pixelated; }
+
+        #controls {
+            position: absolute; bottom: 20px; width: 100%;
+            display: flex; justify-content: space-around; align-items: center; padding: 0 10px; box-sizing: border-box;
+        }
+
+        #joy-area { 
+            width: 100px; height: 100px; background: rgba(255,255,255,0.2); 
+            border: 3px solid #fff; border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; 
+        }
+        #stick { width: 40px; height: 40px; background: #fff; border-radius: 50%; }
+
+        .action-btns { display: flex; flex-direction: column; gap: 10px; }
+        .btn { 
+            width: 70px; height: 70px; background: #e74c3c; border: 3px solid #fff; 
+            border-radius: 50%; color: white; font-weight: bold; 
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 5px #c0392b;
+        }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px #c0392b; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="stat">💰 DINHEIRO: R$ <span id="money">50.000</span></div>
+    <div class="stat">⭐ PROCURADO: 0</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="controls">
+    <div id="joy-area"><div id="stick"></div></div>
+    <div class="action-btns">
+        <div class="btn" id="btn-car">ENTRAR<br>CARRO</div>
+        <div class="btn" id="btn-run" style="background: #3498db; box-shadow: 0 5px #2980b9;">CORRER</div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Configurações do Mundo (Pixel Art)
+    const tileSize = 64;
+    const map = [
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+        [1,0,1,0,1,0,1,1,1,0,1,1,1,0,1],
+        [1,0,1,0,0,0,0,0,1,0,0,0,1,0,1],
+        [1,0,1,1,1,1,1,0,1,1,1,0,1,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ];
+
+    let player = {
+        x: 100, y: 100, 
+        angle: 0, 
+        speed: 0, 
+        inCar: false,
+        color: "#3498db"
+    };
+
+    // Joystick
+    let joy = { x: 0, y: 0 };
+    const stick = document.getElementById('stick');
+
+    document.getElementById('joy-area').addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        const rect = e.currentTarget.getBoundingClientRect();
+        joy.x = (touch.clientX - (rect.left + 50)) / 50;
+        joy.y = (touch.clientY - (rect.top + 50)) / 50;
+        const dist = Math.sqrt(joy.x**2 + joy.y**2);
+        if(dist > 1) { joy.x /= dist; joy.y /= dist; }
+        stick.style.transform = `translate(${joy.x*30}px, ${joy.y*30}px)`;
+    });
+
+    document.getElementById('joy-area').addEventListener('touchend', () => {
+        joy = {x:0, y:0};
+        stick.style.transform = 'translate(0,0)';
+    });
+
+    // Botão de Carro
+    document.getElementById('btn-car').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        player.inCar = !player.inCar;
+        player.color = player.inCar ? "#f1c40f" : "#3498db";
+    });
+
+    function update() {
+        const moveSpeed = player.inCar ? 6 : 3;
+        
+        // Movimentação
+        if (Math.abs(joy.x) > 0.1 || Math.abs(joy.y) > 0.1) {
+            let nextX = player.x + joy.x * moveSpeed;
+            let nextY = player.y + joy.y * moveSpeed;
+
+            // Colisão Simples com as Paredes (1 = Prédio)
+            let mapX = Math.floor(nextX / tileSize);
+            let mapY = Math.floor(nextY / tileSize);
+
+            if (map[mapY] && map[mapY][mapX] === 0) {
+                player.x = nextX;
+                player.y = nextY;
+            }
+            
+            player.angle = Math.atan2(joy.y, joy.x);
+        }
+
+        draw();
+        requestAnimationFrame(update);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Centralizar câmera no jogador
+        const camX = -player.x + canvas.width / 2;
+        const camY = -player.y + canvas.height / 2;
+        ctx.save();
+        ctx.translate(camX, camY);
+
+        // Desenhar Mapa
+        for (let y = 0; y < map.length; y++) {
+            for (let x = 0; x < map[y].length; x++) {
+                if (map[y][x] === 1) {
+                    // Prédio Pixelado
+                    ctx.fillStyle = "#34495e";
+                    ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    ctx.strokeStyle = "#2c3e50";
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(x * tileSize + 5, y * tileSize + 5, tileSize - 10, tileSize - 10);
+                } else {
+                    // Estrada/Chão
+                    ctx.fillStyle = "#95a5a6";
+                    ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                }
+            }
+        }
+
+        // Desenhar Jogador / Carro
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.rotate(player.angle);
+        
+        ctx.fillStyle = player.color;
+        if (player.inCar) {
+            // Desenho do Carro Pixel
+            ctx.fillRect(-20, -12, 40, 24); // Corpo
+            ctx.fillStyle = "#222";
+            ctx.fillRect(10, -10, 8, 20);  // Vidro
+        } else {
+            // Desenho do Humano Pixel
+            ctx.fillRect(-10, -10, 20, 20); // Cabeça/Corpo
+        }
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    update();
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+</script>
+</body>
+</html>

@@ -22,7 +22,8 @@
             --clr-trabalho: #f1f2f6;
             --clr-hero: #ffdd59;
             --clr-carro: #ff5e57;
-            --clr-teste: #48dbfb; /* Cor para o Teste Online */
+            --clr-teste: #48dbfb;
+            --clr-gta: #9c88ff; /* Cor para o Mundo Aberto */
         }
 
         * {
@@ -36,8 +37,8 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 0% 0%, rgba(72, 219, 251, 0.1), transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(255, 71, 87, 0.1), transparent 40%);
+                radial-gradient(circle at 0% 0%, rgba(156, 136, 255, 0.1), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(30, 144, 255, 0.1), transparent 40%);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -116,6 +117,7 @@
         }
 
         /* Cores dos Ícones */
+        .card-gta .icon-box { background: rgba(156, 136, 255, 0.15); color: var(--clr-gta); border: 1px solid var(--clr-gta); }
         .card-teste .icon-box { background: rgba(72, 219, 251, 0.15); color: var(--clr-teste); border: 1px solid var(--clr-teste); }
         .card-carro .icon-box { background: rgba(255, 94, 87, 0.15); color: var(--clr-carro); border: 1px solid var(--clr-carro); }
         .card-hero .icon-box { background: rgba(255, 221, 89, 0.15); color: var(--clr-hero); border: 1px solid var(--clr-hero); }
@@ -144,11 +146,19 @@
 
     <main class="game-grid">
         
+        <a href="gta0.html" class="game-card card-gta">
+            <div class="icon-box">🕶️</div>
+            <div class="info">
+                <h2>Mundo Aberto</h2>
+                <p>Liberdade total em um mapa gigante.</p>
+            </div>
+        </a>
+
         <a href="testeon.html" class="game-card card-teste">
             <div class="icon-box">⚡</div>
             <div class="info">
                 <h2>Teste Online</h2>
-                <p>Verifique a conexão e novas funções.</p>
+                <p>Verificação de sistemas e conexão.</p>
             </div>
         </a>
 
@@ -156,7 +166,7 @@
             <div class="icon-box">🚗</div>
             <div class="info">
                 <h2>Corrida de Carros</h2>
-                <p>Velocidade máxima nas pistas.</p>
+                <p>Pise fundo para vencer.</p>
             </div>
         </a>
 
@@ -164,7 +174,7 @@
             <div class="icon-box">🦸‍♂️</div>
             <div class="info">
                 <h2>Herói ou Vilão</h2>
-                <p>O destino do mundo em suas mãos.</p>
+                <p>Suas decisões mudam o mundo.</p>
             </div>
         </a>
 
@@ -172,7 +182,7 @@
             <div class="icon-box">🎬</div>
             <div class="info">
                 <h2>Mestre do Cinema</h2>
-                <p>Decisões que mudam a história.</p>
+                <p>Um filme onde você é o diretor.</p>
             </div>
         </a>
 
@@ -180,7 +190,7 @@
             <div class="icon-box">🧱</div>
             <div class="info">
                 <h2>Mundo de Blocos</h2>
-                <p>Crie e explore universos infinitos.</p>
+                <p>Construa sua própria aventura.</p>
             </div>
         </a>
 
@@ -188,7 +198,7 @@
             <div class="icon-box">🏙️</div>
             <div class="info">
                 <h2>Cidade em 3D</h2>
-                <p>Passeie por um mapa tridimensional.</p>
+                <p>Explore cada canto deste mapa.</p>
             </div>
         </a>
 
@@ -196,7 +206,7 @@
             <div class="icon-box">🔫</div>
             <div class="info">
                 <h2>Força de Ataque</h2>
-                <p>Ação rápida e precisão total.</p>
+                <p>Combates táticos e rápidos.</p>
             </div>
         </a>
 
@@ -204,7 +214,7 @@
             <div class="icon-box">🪁</div>
             <div class="info">
                 <h2>Festival de Pipas</h2>
-                <p>Diversão garantida no céu azul.</p>
+                <p>Diversão clássica no céu.</p>
             </div>
         </a>
 
@@ -212,7 +222,7 @@
             <div class="icon-box">🌐</div>
             <div class="info">
                 <h2>Mundo em Rede</h2>
-                <p>Jogue com pessoas de todo lugar.</p>
+                <p>Jogue agora com outros players.</p>
             </div>
         </a>
 
@@ -220,14 +230,14 @@
             <div class="icon-box">💼</div>
             <div class="info">
                 <h2>Missão Especial</h2>
-                <p>Projeto Bon: Objetivos secretos.</p>
+                <p>Objetivos do Projeto Bon.</p>
             </div>
         </a>
 
     </main>
 
     <footer>
-        DAVI GAMES © 2024 - 10 JOGOS DISPONÍVEIS
+        DAVI GAMES © 2024 - 11 JOGOS DISPONÍVEIS
     </footer>
 
 </body>
