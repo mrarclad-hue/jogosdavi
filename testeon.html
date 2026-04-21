@@ -29,6 +29,7 @@
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
 
+        /* Botão de Rotação com Feedback Visual */
         #rotate-ui-btn {
             position: absolute;
             top: 15px;
@@ -46,7 +47,11 @@
             font-size: 24px;
             pointer-events: auto;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: background 0.3s;
+            transition: background 0.3s, transform 0.1s;
+        }
+        #rotate-ui-btn:active {
+            transform: scale(0.85);
+            filter: brightness(1.2);
         }
 
         #menu-container, #end-screen {
@@ -68,19 +73,21 @@
         .btn-map { background: #7f8c8d; flex: 1; margin: 2px; font-size: 10px; }
         .btn-map.selected { background: #27ae60; border: 2px solid #fff; }
 
+        /* Ajuste de Layout dos Controles: Analógico Esquerda, Botões Direita */
         #controls { 
             position: absolute; 
-            bottom: 30px; 
+            bottom: 40px; 
             width: 100%; 
             display: none; 
+            flex-direction: row; /* Garante lado a lado sempre */
             justify-content: space-between; 
-            padding: 0 40px; 
+            padding: 0 30px; 
             box-sizing: border-box; 
             align-items: flex-end;
         }
         
         .control-btn { 
-            width: 80px; height: 80px; border-radius: 50%; 
+            width: 75px; height: 75px; border-radius: 50%; 
             background: rgba(255,255,255,0.2); color: white; 
             display: flex; align-items: center; justify-content: center; 
             font-weight: bold; border: 3px solid rgba(255,255,255,0.4);
@@ -99,10 +106,9 @@
             top: 37.5px; left: 37.5px; 
         }
 
-        #btn-group-right { display: flex; flex-direction: column; align-items: center; }
+        #btn-group-right { display: flex; flex-direction: column; align-items: flex-end; }
 
         #stats { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; font-size: 14px; border: 1px solid #3498db; }
-        
         #room-code-display { font-size: 22px; color: #f1c40f; font-weight: bold; margin-bottom: 15px; display: none; text-align: center; }
     </style>
 </head>
@@ -112,9 +118,7 @@
 
 <div id="menu-container">
     <h1 style="color: white; margin-bottom: 20px;">ELITE AIRBORNE</h1>
-    
     <div id="room-code-display">CÓDIGO DA SALA: <br><span id="code-number" style="font-size: 40px;">----</span></div>
-
     <div class="panel">
         <h4 style="margin: 5px;">SELECIONAR MAPA</h4>
         <div style="display: flex;">
@@ -130,7 +134,7 @@
             <div id="p2-btn" class="btn btn-p2">ENTRAR</div>
         </div>
     </div>
-    <div id="status-display" style="color: #bdc3c7; font-size: 13px;">Gire a tela para modo paisagem</div>
+    <div id="status-display" style="color: #bdc3c7; font-size: 13px;">Inicie o jogo</div>
 </div>
 
 <div id="end-screen">
@@ -144,7 +148,7 @@
     <div id="controls" class="interactive">
         <div id="joystick"><div id="knob"></div></div>
         <div id="btn-group-right">
-            <div id="btn-grenade" class="control-btn" style="background: rgba(241, 196, 15, 0.4);">GRANADA</div>
+            <div id="btn-grenade" class="control-btn" style="background: rgba(241, 196, 15, 0.4); width: 65px; height: 65px;">GRANADA</div>
             <div style="display: flex;">
                 <div id="btn-jump" class="control-btn" style="background: rgba(46, 204, 113, 0.4);">PULAR</div>
                 <div id="btn-shoot" class="control-btn" style="background: rgba(231, 76, 60, 0.4);">FOGO</div>
@@ -196,6 +200,7 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
+// Botão de Rotação com Lógica de Tela Cheia condicional
 document.getElementById('rotate-ui-btn').addEventListener('touchstart', async (e) => {
     e.preventDefault();
     const btn = e.currentTarget;
@@ -212,7 +217,6 @@ document.getElementById('rotate-ui-btn').addEventListener('touchstart', async (e
     }
 });
 
-// --- MULTIPLAYER COM CÓDIGO ---
 let peer, conn, isHost = false, gameActive = false, myKills = 0, enemyKills = 0;
 const ROOM_PREFIX = "AIRBORNE-ROOM-";
 
@@ -236,6 +240,7 @@ function handleTouch(e) {
     for (let t of touches) {
         const el = document.elementFromPoint(t.clientX, t.clientY);
         if (!el) continue;
+
         if (!gameActive) {
             if (el.id === 'p1-btn') createRoom();
             if (el.id === 'p2-btn') joinRoom();
@@ -244,13 +249,20 @@ function handleTouch(e) {
                 document.querySelectorAll('.btn-map').forEach((b, i) => b.classList.toggle('selected', i === selectedMapIndex));
             }
         }
+
+        // Lógica do Joystick: Continua andando mesmo se o dedo sair muito do centro
         if (el.id === 'joystick' || el.id === 'knob') {
             const r = document.getElementById('joystick').getBoundingClientRect();
-            const dist = t.clientX - (r.left + r.width / 2);
+            const centerX = r.left + r.width / 2;
+            const dist = t.clientX - centerX;
             moveX = dist < 0 ? -1 : 1;
-            document.getElementById('knob').style.transform = `translateX(${Math.max(-35, Math.min(35, dist))}px)`;
+            
+            // Visual do Knob limitado ao círculo, mas input permanece
+            const visualDist = Math.max(-35, Math.min(35, dist));
+            document.getElementById('knob').style.transform = `translateX(${visualDist}px)`;
             anyJoy = true;
         }
+
         if (el.id === 'btn-jump') input.jump = true;
         if (el.id === 'btn-shoot') input.shoot = true;
         if (el.id === 'btn-grenade') input.gren = true;
@@ -260,22 +272,24 @@ function handleTouch(e) {
 
 document.addEventListener('touchstart', handleTouch, {passive: false});
 document.addEventListener('touchmove', handleTouch, {passive: false});
-document.addEventListener('touchend', (e) => { if (e.touches.length === 0) input.x = 0; handleTouch(e); }, {passive: false});
+document.addEventListener('touchend', (e) => { 
+    if (e.touches.length === 0) {
+        input.x = 0; 
+        document.getElementById('knob').style.transform = `translateX(0)`;
+    }
+    handleTouch(e); 
+}, {passive: false});
 
 function createRoom() {
     if (peer) return;
     const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
     isHost = true;
     peer = new Peer(ROOM_PREFIX + roomCode);
-    
-    document.getElementById('status-display').innerText = "Gerando sala...";
-
     peer.on('open', () => {
         document.getElementById('code-number').innerText = roomCode;
         document.getElementById('room-code-display').style.display = 'block';
         document.getElementById('status-display').innerText = "Aguardando oponente...";
     });
-
     peer.on('connection', (c) => {
         conn = c;
         conn.on('open', () => {
@@ -283,25 +297,17 @@ function createRoom() {
             setupNetwork();
         });
     });
-
-    peer.on('error', (err) => {
-        if(err.type === 'id-taken') { peer.destroy(); peer = null; createRoom(); }
-        else { alert("Erro de conexão. Tente novamente."); location.reload(); }
-    });
 }
 
 function joinRoom() {
     if (peer) return;
     const roomCode = prompt("Digite o código de 4 dígitos:");
     if (!roomCode || roomCode.length !== 4) return;
-
     isHost = false;
     peer = new Peer(); 
-
     peer.on('open', () => {
         const c = peer.connect(ROOM_PREFIX + roomCode);
         c.on('open', () => { conn = c; setupNetwork(); });
-        setTimeout(() => { if(!conn) { alert("Sala não encontrada."); location.reload(); }}, 5000);
     });
 }
 
