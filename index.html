@@ -23,7 +23,8 @@
             --clr-hero: #ffdd59;
             --clr-carro: #ff5e57;
             --clr-teste: #48dbfb;
-            --clr-gta: #9c88ff; /* Cor para o Mundo Aberto */
+            --clr-gta: #9c88ff;
+            --clr-barco: #45aaf2; /* Cor para o Jogo de Barco */
         }
 
         * {
@@ -37,8 +38,8 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 0% 0%, rgba(156, 136, 255, 0.1), transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(30, 144, 255, 0.1), transparent 40%);
+                radial-gradient(circle at 0% 0%, rgba(69, 170, 242, 0.1), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(156, 136, 255, 0.1), transparent 40%);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -117,6 +118,7 @@
         }
 
         /* Cores dos Ícones */
+        .card-barco .icon-box { background: rgba(69, 170, 242, 0.15); color: var(--clr-barco); border: 1px solid var(--clr-barco); }
         .card-gta .icon-box { background: rgba(156, 136, 255, 0.15); color: var(--clr-gta); border: 1px solid var(--clr-gta); }
         .card-teste .icon-box { background: rgba(72, 219, 251, 0.15); color: var(--clr-teste); border: 1px solid var(--clr-teste); }
         .card-carro .icon-box { background: rgba(255, 94, 87, 0.15); color: var(--clr-carro); border: 1px solid var(--clr-carro); }
@@ -146,6 +148,14 @@
 
     <main class="game-grid">
         
+        <a href="barco.html" class="game-card card-barco">
+            <div class="icon-box">⛵</div>
+            <div class="info">
+                <h2>Aventura em Alto Mar</h2>
+                <p>Navegue por águas perigosas.</p>
+            </div>
+        </a>
+
         <a href="gta0.html" class="game-card card-gta">
             <div class="icon-box">🕶️</div>
             <div class="info">
@@ -237,7 +247,7 @@
     </main>
 
     <footer>
-        DAVI GAMES © 2024 - 11 JOGOS DISPONÍVEIS
+        DAVI GAMES © 2024 - 12 JOGOS DISPONÍVEIS
     </footer>
 
 </body>
