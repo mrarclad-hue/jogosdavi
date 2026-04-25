@@ -25,9 +25,10 @@
         #end-screen { background: rgba(0,0,0,0.9); color: white; display: none; }
 
         .panel { background: #2f3640; padding: 15px; border-radius: 15px; border: 2px solid #3498db; text-align: center; color: white; margin-bottom: 10px; width: 85%; max-width: 350px; }
-        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; cursor: pointer; }
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; cursor: pointer; margin: 5px; }
         .btn-p1 { background: #3498db; width: 45%; }
         .btn-p2 { background: #e67e22; width: 45%; }
+        .btn-menu { background: #7f8c8d; width: 45%; }
         .btn-map { background: #7f8c8d; flex: 1; margin: 2px; font-size: 10px; }
         .btn-map.selected { background: #27ae60; border: 2px solid #fff; }
 
@@ -68,7 +69,10 @@
 <div id="end-screen">
     <h1 id="end-msg">VITÓRIA!</h1>
     <p id="end-stats"></p>
-    <button class="btn btn-p1" onclick="location.reload()">REJOGAR</button>
+    <div style="display: flex; width: 100%; justify-content: center; gap: 10px;">
+        <button class="btn btn-p1" onclick="resetGame()">REJOGAR</button>
+        <button class="btn btn-menu" onclick="location.reload()">MENU</button>
+    </div>
 </div>
 
 <div id="ui-layer">
@@ -151,7 +155,6 @@ function handleTouch(e) {
     for (let t of touches) {
         const el = document.elementFromPoint(t.clientX, t.clientY);
         
-        // Lógica de Joystick Global (segue o dedo)
         if ((el && (el.id === 'joystick' || el.id === 'knob')) || t.identifier === input.joyId) {
             if (input.joyId === null) input.joyId = t.identifier;
             const rect = document.getElementById('joystick').getBoundingClientRect();
@@ -212,6 +215,7 @@ function setupNetwork() {
         if(d.type==='plane') { plane.active = true; plane.x = -500; }
         if(d.type==='kill') { myKills++; document.getElementById('kill-count').innerText = myKills; checkEnd(); }
         if(d.type==='map') selectedMapIndex = d.i;
+        if(d.type==='restart') { startReset(); }
     });
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('controls').style.display = 'flex';
@@ -232,6 +236,23 @@ function checkEnd() {
         document.getElementById('end-msg').innerText = myKills >= 4 ? "VITÓRIA!" : "DERROTA!";
         document.getElementById('end-stats').innerText = `${myKills} KILLS vs ${enemyKills}`;
     }
+}
+
+function resetGame() {
+    if(conn) conn.send({type: 'restart'});
+    startReset();
+}
+
+function startReset() {
+    myKills = 0; enemyKills = 0;
+    document.getElementById('kill-count').innerText = "0";
+    player.hp = 100; player.grens = 0;
+    document.getElementById('grenade-count').innerText = "0";
+    player.x = isHost ? 200 : 3500; player.y = 0;
+    bullets = []; grens = []; items = []; bombs = [];
+    document.getElementById('end-screen').style.display = 'none';
+    gameActive = true;
+    gameLoop();
 }
 
 function gameLoop() {
@@ -270,7 +291,6 @@ function gameLoop() {
         conn.send({type: 'gren', x: player.x+20, y: player.y, v: gvx});
     }
 
-    // Colisão de Explosivos
     [...grens, ...bombs].forEach((g, i) => {
         g.x = (g.x || 0) + (g.vx || 0); g.y += (g.vy || 0); g.vy = (g.vy || 0) + 0.4;
         maps[selectedMapIndex].rects.forEach(p => {
@@ -303,7 +323,6 @@ function gameLoop() {
 
     if(Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
     
-    // Throttle de Sincronização
     if(Date.now() % 30 < 16) conn.send({type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp});
     
     draw(); requestAnimationFrame(gameLoop);
