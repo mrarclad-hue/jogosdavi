@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Boat Race - Pro Championship</title>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            outline: none;
+        }
+        body { margin: 0; overflow: hidden; background: #00a8ff; font-family: sans-serif; touch-action: none; }
+        canvas { display: block; }
+
+        #hud {
+            position: absolute; top: 20px; left: 20px; color: white;
+            text-shadow: 2px 2px #000; pointer-events: none; z-index: 10;
+        }
+        .info { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 10px; margin-bottom: 5px; border-left: 4px solid #f1c40f; }
+
+        #msg-fim {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9); color: white; padding: 30px; border-radius: 20px;
+            text-align: center; display: none; z-index: 100; border: 3px solid #f1c40f;
+        }
+
+        #controls {
+            position: absolute; bottom: 40px; width: 100%;
+            display: flex; justify-content: space-around; align-items: center; z-index: 20;
+        }
+        #joy-base { width: 100px; height: 100px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        #joy-stick { width: 40px; height: 40px; background: #fff; border-radius: 50%; }
+        #btn-turbo { 
+            width: 80px; height: 80px; background: #e67e22; border: 4px solid #fff; 
+            border-radius: 50%; color: white; font-weight: bold; display: flex; 
+            align-items: center; justify-content: center; box-shadow: 0 6px #d35400;
+        }
+    </style>
+</head>
+<body>
+
+<div id="hud">
+    <div class="info">🏁 DISTÂNCIA: <span id="dist-text">995</span>m</div>
+    <div class="info">🚤 POSIÇÃO: <span id="pos-text">1</span>º</div>
+</div>
+
+<div id="msg-fim">
+    <h1 id="resultado-titulo">FIM DE PROVA!</h1>
+    <p id="resultado-msg"></p>
+    <button onclick="location.reload()" style="padding:10px 20px; background:gold; border:none; border-radius:10px; font-weight:bold;">REPETIR</button>
+</div>
+
+<div id="controls">
+    <div id="joy-base"><div id="joy-stick"></div></div>
+    <div id="btn-turbo">TURBO</div>
+</div>
+
+<script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x00a8ff);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const sun = new THREE.DirectionalLight(0xffffff, 1);
+    sun.position.set(10, 50, 10);
+    scene.add(sun);
+
+    // PISTA
+    const finishY = 995;
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(80, finishY + 100), new THREE.MeshStandardMaterial({color: 0x0077be}));
+    water.rotation.x = -Math.PI / 2;
+    water.position.z = finishY / 2;
+    scene.add(water);
+
+    // FUNÇÃO PARA CRIAR BARCO
+    function createBoat(color) {
+        const group = new THREE.Group();
+        const hull = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.8, 5), new THREE.MeshStandardMaterial({color: color}));
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 1.5), new THREE.MeshStandardMaterial({color: 0x333333}));
+        cabin.position.set(0, 0.8, -0.5);
+        group.add(hull, cabin);
+        return group;
+    }
+
+    const player = createBoat(0xecf0f1);
+    scene.add(player);
+
+    // COMPETIDORES (NPCs)
+    const npc1 = createBoat(0xff4757); // Vermelho
+    npc1.position.set(-15, 0, 10);
+    scene.add(npc1);
+
+    const npc2 = createBoat(0x2ecc71); // Verde
+    npc2.position.set(15, 0, 5);
+    scene.add(npc2);
+
+    // BOIAS E CHEGADA
+    for(let i = 0; i <= finishY; i += 40) {
+        const bL = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshStandardMaterial({color: 0xff0000}));
+        bL.position.set(-38, 0, i);
+        scene.add(bL);
+        const bR = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshStandardMaterial({color: 0xff0000}));
+        bR.position.set(38, 0, i);
+        scene.add(bR);
+    }
+
+    const finishLine = new THREE.Mesh(new THREE.PlaneGeometry(80, 5), new THREE.MeshStandardMaterial({color: 0xffffff}));
+    finishLine.rotation.x = -Math.PI/2;
+    finishLine.position.z = finishY;
+    scene.add(finishLine);
+
+    // ESTADOS
+    let joy = { x: 0, y: 0 }, speed = 0, isTurbo = false, jogoAtivo = true;
+    const stick = document.getElementById('joy-stick');
+
+    // EVENTOS TURBO
+    const turboBtn = document.getElementById('btn-turbo');
+    turboBtn.addEventListener('touchstart', (e) => { e.preventDefault(); isTurbo = true; });
+    turboBtn.addEventListener('touchend', (e) => { e.preventDefault(); isTurbo = false; });
+
+    // EVENTOS JOYSTICK
+    document.getElementById('joy-base').addEventListener('touchmove', (e) => {
+        const t = e.touches[0];
+        const r = e.currentTarget.getBoundingClientRect();
+        joy.x = (t.clientX - (r.left + 50)) / 50;
+        joy.y = (t.clientY - (r.top + 50)) / 50;
+        const d = Math.sqrt(joy.x**2 + joy.y**2);
+        if(d > 1) { joy.x /= d; joy.y /= d; }
+        stick.style.transform = `translate(${joy.x*30}px, ${joy.y*30}px)`;
+    });
+    document.getElementById('joy-base').addEventListener('touchend', () => { joy = {x:0, y:0}; stick.style.transform = 'translate(0,0)'; });
+
+    function animate() {
+        if(!jogoAtivo) return;
+        requestAnimationFrame(animate);
+
+        // MOVIMENTO JOGADOR
+        let targetSpeed = Math.max(0, -joy.y) * (isTurbo ? 1.6 : 0.7);
+        speed += (targetSpeed - speed) * 0.1;
+
+        player.position.z += speed;
+        player.position.x -= joy.x * 0.5;
+        player.rotation.y = -joy.x * 0.4;
+
+        // MOVIMENTO NPCs
+        npc1.position.z += 0.65 + Math.sin(Date.now()*0.001)*0.1;
+        npc2.position.z += 0.7 + Math.cos(Date.now()*0.001)*0.05;
+
+        // BALANÇO
+        player.position.y = Math.sin(Date.now()*0.005) * 0.1;
+
+        // COLISÃO PAREDES
+        if(Math.abs(player.position.x) > 36) {
+            speed *= 0.8;
+            player.position.x = player.position.x > 0 ? 36 : -36;
+        }
+
+        // HUD E POSIÇÃO
+        let pos = 1;
+        if(npc1.position.z > player.position.z) pos++;
+        if(npc2.position.z > player.position.z) pos++;
+        document.getElementById('pos-text').innerText = pos;
+        document.getElementById('dist-text').innerText = Math.max(0, Math.floor(finishY - player.position.z));
+
+        // CHEGADA
+        if(player.position.z >= finishY) {
+            jogoAtivo = false;
+            document.getElementById('msg-fim').style.display = 'block';
+            document.getElementById('resultado-msg').innerText = `Você chegou em ${pos}º lugar!`;
+        }
+
+        // CAMERA
+        camera.position.set(player.position.x, player.position.y + 6, player.position.z - 15);
+        camera.lookAt(player.position.x, 0, player.position.z + 10);
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.onresize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+</script>
+</body>
+</html>
