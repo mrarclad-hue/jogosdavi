@@ -22,10 +22,10 @@
             position: absolute; width: 100%; height: 100%; background: #1e272e; 
             z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; 
         }
-        #end-screen { background: rgba(0,0,0,0.9); color: white; display: none; }
+        #end-screen { background: rgba(0,0,0,0.9); color: white; display: none; pointer-events: auto; }
 
         .panel { background: #2f3640; padding: 15px; border-radius: 15px; border: 2px solid #3498db; text-align: center; color: white; margin-bottom: 10px; width: 85%; max-width: 350px; }
-        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; cursor: pointer; margin: 5px; }
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: #fff; cursor: pointer; margin: 5px; pointer-events: auto; }
         .btn-p1 { background: #3498db; width: 45%; }
         .btn-p2 { background: #e67e22; width: 45%; }
         .btn-menu { background: #7f8c8d; width: 45%; }
@@ -69,9 +69,9 @@
 <div id="end-screen">
     <h1 id="end-msg">VITÓRIA!</h1>
     <p id="end-stats"></p>
-    <div style="display: flex; width: 100%; justify-content: center; gap: 10px;">
-        <button class="btn btn-p1" onclick="resetGame()">REJOGAR</button>
-        <button class="btn btn-menu" onclick="location.reload()">MENU</button>
+    <div style="display: flex; width: 100%; justify-content: center; gap: 10px; pointer-events: auto;">
+        <button class="btn btn-p1" id="final-retry-btn">REJOGAR</button>
+        <button class="btn btn-menu" id="final-menu-btn">MENU</button>
     </div>
 </div>
 
@@ -147,6 +147,9 @@ const maps = [
 const input = { x: 0, jump: false, shoot: false, gren: false, joyId: null };
 
 function handleTouch(e) {
+    // Não bloqueia preventDefault se for nos botões da tela final
+    if (e.target.id === 'final-retry-btn' || e.target.id === 'final-menu-btn') return;
+    
     e.preventDefault();
     const touches = e.touches;
     input.jump = input.shoot = input.gren = false;
@@ -185,6 +188,10 @@ function handleTouch(e) {
 document.addEventListener('touchstart', handleTouch, {passive: false});
 document.addEventListener('touchmove', handleTouch, {passive: false});
 document.addEventListener('touchend', handleTouch, {passive: false});
+
+// Eventos de clique para os botões da tela final (suporte a touch e mouse)
+document.getElementById('final-retry-btn').addEventListener('click', resetGame);
+document.getElementById('final-menu-btn').addEventListener('click', () => location.reload());
 
 function createRoom() {
     const code = Math.floor(1000 + Math.random() * 9000).toString();
@@ -239,20 +246,27 @@ function checkEnd() {
 }
 
 function resetGame() {
-    if(conn) conn.send({type: 'restart'});
+    if(conn && conn.open) conn.send({type: 'restart'});
     startReset();
 }
 
 function startReset() {
+    // Reset de variáveis
     myKills = 0; enemyKills = 0;
     document.getElementById('kill-count').innerText = "0";
     player.hp = 100; player.grens = 0;
     document.getElementById('grenade-count').innerText = "0";
-    player.x = isHost ? 200 : 3500; player.y = 0;
+    player.x = isHost ? 200 : 3500; player.y = 0; player.vx = 0; player.vy = 0;
     bullets = []; grens = []; items = []; bombs = [];
+    
+    // UI
     document.getElementById('end-screen').style.display = 'none';
-    gameActive = true;
-    gameLoop();
+    
+    // Reinicia loop se estiver parado
+    if(!gameActive) {
+        gameActive = true;
+        gameLoop();
+    }
 }
 
 function gameLoop() {
@@ -323,7 +337,9 @@ function gameLoop() {
 
     if(Math.abs(player.vx) > 0.1) { player.facing = player.vx > 0 ? 1 : -1; player.anim += 0.2; }
     
-    if(Date.now() % 30 < 16) conn.send({type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp});
+    if(conn && conn.open && Date.now() % 30 < 16) {
+        conn.send({type:'sync', x:player.x, y:player.y, f:player.facing, a:player.anim, h:player.hp});
+    }
     
     draw(); requestAnimationFrame(gameLoop);
 }
